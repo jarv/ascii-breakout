@@ -1,6 +1,6 @@
 BASEDIR=$(CURDIR)
 OUTPUTDIR=$(BASEDIR)/static
-github: publish
+github: 
 	ghp-import $(OUTPUTDIR)
 	git push origin gh-pages
 	echo "ascii-breakout.com" > $(OUTPUTDIR)/CNAME
