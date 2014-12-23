@@ -1,0 +1,111 @@
+body {
+    margin: 0px;
+    font-family: 'Courier' monospace;
+    background-color: black;
+    color: #00ff00;
+}
+
+#canvas {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    z-index: -300;
+}
+
+.splash-wrapper {
+    position: relative;
+}
+.splash {
+    position: relative;
+    z-index: 300;
+    width: 50%;
+    margin: 0px auto;
+    margin-top: 10%;
+    text-align: center;
+    background-color: #8e8e8e;
+    opacity: .7;
+    border: 2px solid #336a33;
+    padding: 10px;
+    text-shadow: -1px 0 #336a33, 0 1px #336a33, 1px 0 #336a33, 0 -1px #336a33;
+    display: none;
+
+}
+
+.actions {
+    display: none;
+}
+.title {
+    font-size: 3em;
+    font-weight: bold;
+}
+input[name="str"] {
+    border-radius: 5px;
+    font-family: 'Courier New' monospace;
+    background-color: white;
+    color: #336a33;
+    width: 60%;
+    display: inline-block;
+
+}
+input[type="range"] {
+    display: block;
+    width: 50%;
+    margin: 0px auto;
+}
+button {
+    width: 100px;
+}
+.select-wrap {
+    position: relative;
+    display: inline-block;
+    overflow: visible;
+    z-index: 1;
+    height: 20px;
+    width: 70px;
+}
+.select-wrap:hover {
+    z-index: 2;
+}
+
+div.select-box input[type="radio"] {
+    display: none;
+}
+
+div.select-box input[type=radio] + label {
+    position: absolute;
+    display:inline-block;
+    background-color: white;
+    cursor: pointer;
+    height: 20px;
+    width: 70px;
+    top: 0px;
+    right: 0px;
+    overflow: hidden;
+}
+
+div.select-box input[type=radio]:checked + label { 
+    background-color: #336a33;
+    color: white;
+}
+
+div.select-box {
+
+    overflow: visible;
+    text-align: center;
+    font-size: 14px;
+    font-weight: normal;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    text-shadow: none;
+    color: black;
+    display: inline-block;
+    padding: 10px;
+    width: 80%;
+    height: 200px;
+    overflow-y: scroll;
+    overflow-x: visible;
+}
+
+li.share-link {
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    text-shadow: none;
+} 
