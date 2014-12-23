@@ -1,6 +1,6 @@
 # ascii-breakout
 
-This all started with a tiny re-design of [my blog](http://jarv.org) and an easter egg (click on the jarv.org to see it). [ascii-breakout](http://ascii-breakout.com) is the same thing except it works for any text and
+This all started with a tiny re-design of [my blog](http://jarv.org) and an easter egg (click on the jarv.org to see it). After that I decided to create [ascii-breakout](http://ascii-breakout.com) which is the same thing except it works for any text and
 has some hacks for line wrapping.  It uses figlet fonts, you can read all about them [here](http://www.jave.de/figlet/figfont.html).
 
 [Play the demo](http://ascii-breakout.com)
