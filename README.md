@@ -1,10 +1,7 @@
 # ascii-breakout
 
-
-Weekend Christmas hack to create a breakout game using
-ascii fonts. Why? No reason, I thought maybe it would be
-fun to add an easter egg to the ascii header of [jarv.org](jarv.org).
-To see it in action there click the ascii "jarv" on the top of the page.
+This all started with a tiny re-design of [my blog](http://jarv.org) and an easter egg (click on the jarv.org to see it). [ascii-breakout](http://ascii-breakout.com) is the same thing except it works for any text and
+has some hacks for line wrapping.  It uses figlet fonts, you can read all about them [here](http://www.jave.de/figlet/figfont.html).
 
 [Play the demo](http://ascii-breakout.com)
 
