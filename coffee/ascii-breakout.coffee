@@ -346,6 +346,8 @@ $(() ->
     paddle_height: 10
     paddle_width: 100
     font_name: "'Courier New', Monospace"
+    default_str: "Merry Christmas"
+    default_font: "acrobatic"
   }
 
   game_defaults = {
@@ -427,6 +429,9 @@ $(() ->
       gen_disp_data(decoded)
       showRunning()
     else
+      $('input[name=str]').val(cfg.default_str)
+      game.figlet_font = cfg.default_font
+      gen_disp_data(cfg.default_str)
       showSplash()
 
     # Setup the game loop and deal with

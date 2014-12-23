@@ -331,7 +331,9 @@
     cfg_defaults = {
       paddle_height: 10,
       paddle_width: 100,
-      font_name: "'Courier New', Monospace"
+      font_name: "'Courier New', Monospace",
+      default_str: "Merry Christmas",
+      default_font: "acrobatic"
     };
     game_defaults = {
       dx: 4,
@@ -388,6 +390,9 @@
         gen_disp_data(decoded);
         showRunning();
       } else {
+        $('input[name=str]').val(cfg.default_str);
+        game.figlet_font = cfg.default_font;
+        gen_disp_data(cfg.default_str);
         showSplash();
       }
       animFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || null;
