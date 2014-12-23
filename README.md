@@ -4,6 +4,7 @@
 Weekend Christmas hack to create a breakout game using
 ascii fonts. Why? No reason, I thought maybe it would be
 fun to add an easter egg to the ascii header of [jarv.org](jarv.org).
+To see it in action there click the ascii "jarv" on the top of the page.
 
 [Play the demo](http://ascii-breakout.com)
 
