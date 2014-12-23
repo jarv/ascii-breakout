@@ -107,19 +107,21 @@ $(() ->
     return
   )
 
-  $(document).on("swipeleft", () ->
-      alert("You swiped left!")
-  )
-  $(document).on("swiperight", () ->
-      alert("You swiped right!")
-  )
-
   # Mouse control for the paddles
   $(document).mousemove((evt) ->
     switch game.state
       when "running"
         if (evt.pageX > game.mouse_min_x and evt.pageX < game.mouse_max_x)
           game.paddle_x = evt.pageX - game.mouse_min_x
+  )
+
+  # touchmove
+  $(window).bind('touchmove', (jQueryEvent) ->
+    switch game.state
+      when "running"
+         jQueryEvent.preventDefault()
+         event = window.event
+         game.paddle_x = event.touches[0].pageX - game.mouse_min_x
   )
 
   # input text 
