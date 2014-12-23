@@ -108,20 +108,15 @@ $(() ->
   )
 
   # Mouse control for the paddles
-  $(document).mousemove((evt) ->
+  $(document).bind('touchmove mousemove', (e) ->
     switch game.state
       when "running"
-        if (evt.pageX > game.mouse_min_x and evt.pageX < game.mouse_max_x)
-          game.paddle_x = evt.pageX - game.mouse_min_x
-  )
-
-  # touchmove
-  $(window).bind('touchmove', (jQueryEvent) ->
-    switch game.state
-      when "running"
-         jQueryEvent.preventDefault()
-         event = window.event
-         game.paddle_x = event.touches[0].pageX - game.mouse_min_x
+        if e.originalEvent.touches
+          cX = e.originalEvent.touches[0].pageX
+        else
+          cX = e.pageX
+        if (cX > game.mouse_min_x and cX < game.mouse_max_x)
+          game.paddle_x = cX - game.mouse_min_x
   )
 
   # input text 

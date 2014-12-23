@@ -110,17 +110,17 @@
           }
       }
     });
-    $(document).on("swipeleft", function() {
-      return alert("You swiped left!");
-    });
-    $(document).on("swiperight", function() {
-      return alert("You swiped right!");
-    });
-    $(document).mousemove(function(evt) {
+    $(document).bind('touchmove mousemove', function(e) {
+      var cX;
       switch (game.state) {
         case "running":
-          if (evt.pageX > game.mouse_min_x && evt.pageX < game.mouse_max_x) {
-            return game.paddle_x = evt.pageX - game.mouse_min_x;
+          if (e.originalEvent.touches) {
+            cX = e.originalEvent.touches[0].pageX;
+          } else {
+            cX = e.pageX;
+          }
+          if (cX > game.mouse_min_x && cX < game.mouse_max_x) {
+            return game.paddle_x = cX - game.mouse_min_x;
           }
       }
     });
