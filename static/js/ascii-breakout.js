@@ -293,7 +293,7 @@
         }
         if (game.ball_locked) {
           ball_x = Math.floor(game.paddle_x + (cfg.paddle_width / 2));
-          ball_y = Math.floor(game.height - cfg.paddle_height - game.ball_radius - 5);
+          ball_y = Math.floor(game.height - cfg.paddle_height - game.ball_radius - 15);
           game.x = ball_x;
           game.y = ball_y;
         } else {
@@ -335,7 +335,7 @@
     };
     game_defaults = {
       dx: 4,
-      dy: 8,
+      dy: -8,
       x: 150,
       y: 150,
       right_down: false,
