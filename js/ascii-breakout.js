@@ -110,6 +110,12 @@
           }
       }
     });
+    $(document).on("swipeleft", function() {
+      return alert("You swiped left!");
+    });
+    $(document).on("swiperight", function() {
+      return alert("You swiped right!");
+    });
     $(document).mousemove(function(evt) {
       switch (game.state) {
         case "running":
@@ -281,6 +287,9 @@
       if (game.state === "running") {
         if (won && game.disp_data.length > 0) {
           showWin();
+        }
+        if (!game.paddle_x) {
+          game.paddle_x = game.width / 2;
         }
         if (game.ball_locked) {
           ball_x = Math.floor(game.paddle_x + (cfg.paddle_width / 2));
