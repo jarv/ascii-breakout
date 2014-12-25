@@ -244,20 +244,13 @@ $(() ->
 
     return
 
-  game_loop = () ->
-    switch game.state
-      when "over"
-        showOver()
-      when "paused"
-        showPaused()
 
-    clear_board()
-
-    ypos = game.font_size * 1.1
+  process_disp_data  = () ->
+    has_won = true
+    game.board_disp = {}
     line_offset = (game.disp_data.length * game.font_size)
-    won = true
+    ypos = game.font_size * 1.1
     for row, row_index in game.disp_data
-      text_color = get_color(row_index)
       line_cnt = 0
       printed = 0
       if game.line_breaks.length > 0
@@ -275,12 +268,13 @@ $(() ->
           else
             line_width = game.line_breaks[line_cnt] - game.line_breaks[line_cnt - 1]
 
-          xpos = Math.round((game.width / 2) - ( line_width * game.char_width / 2) - (game.space_width * game.char_width))
+          # xpos = Math.round((game.width / 2) - ( line_width * game.char_width / 2) - (game.space_width * game.char_width))
+          xpos = Math.round((game.width / 2) - ( line_width * game.char_width / 2))
     
         brick_x = xpos
         brick_y = ypos + (line_cnt * (game.font_size * game.disp_data.length))
         if column != " "
-          won = false
+          has_won = false
           if ! ((game.x - game.ball_radius > brick_x + game.char_width) \
               or (game.x + game.ball_radius < brick_x) \
               or (game.y - game.ball_radius > brick_y + game.font_size) \
@@ -288,11 +282,36 @@ $(() ->
             
             collision(brick_x, brick_y)
             game.disp_data[row_index][column_index] = " "
+        if brick_y of game.board_disp
+          game.board_disp[brick_y] += column
+        else
+          game.board_disp[brick_y] = column
 
-        ctx.fillStyle = text_color
-        ctx.fillText(column, brick_x, brick_y)
         xpos += game.char_width
       ypos += game.font_size
+    return has_won
+
+  disp_board = () ->
+    num_rows = 0
+    for yval, row of game.board_disp
+      xpos = Math.round((game.width / 2) - ( row.length * game.char_width / 2))
+      text_color = get_color(num_rows)
+      ctx.fillStyle = text_color
+      ctx.fillText(row, xpos, +yval)
+      num_rows += 1
+
+  game_loop = () ->
+    # set to false in process_disp_data() 
+    # if a brick is found
+    switch game.state
+      when "over"
+        showOver()
+      when "paused"
+        showPaused()
+
+    clear_board()
+    won = process_disp_data()
+    disp_board()
 
     if game.state == "running"
 
@@ -346,8 +365,8 @@ $(() ->
     paddle_height: 10
     paddle_width: 100
     font_name: "'Courier New', Monospace"
-    default_str: "Merry Christmas"
-    default_font: "acrobatic"
+    default_str: "ascii breakout!!"
+    default_font: "standard"
   }
 
   game_defaults = {
@@ -365,6 +384,9 @@ $(() ->
 
     # raw data for words on the canvas
     disp_data: []
+    # how the characters are displayed
+    # on canvas (after wrapping)
+    board_disp: {}
 
     # list of indexes where word
     # boundaries (used for word wrapping)

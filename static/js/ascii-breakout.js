@@ -3,7 +3,7 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(function() {
-    var cfg, cfg_defaults, clear_board, collision, create_line_breaks, ctx, draw_circle, draw_rect, game, game_defaults, game_loop, gen_disp_data, get_color, showOver, showPaused, showRunning, showSplash, showWin, update_board_cfg;
+    var cfg, cfg_defaults, clear_board, collision, create_line_breaks, ctx, disp_board, draw_circle, draw_rect, game, game_defaults, game_loop, gen_disp_data, get_color, process_disp_data, showOver, showPaused, showRunning, showSplash, showWin, update_board_cfg;
     $(".select-box label").hover(function() {
       $(this).closest("label").css("z-index", 1);
       $(this).animate({
@@ -233,23 +233,15 @@
           }
       }
     };
-    game_loop = function() {
-      var ball_x, ball_y, brick_x, brick_y, column, column_index, line_cnt, line_offset, line_width, printed, row, row_index, text_color, won, xpos, ypos, _i, _j, _len, _len1, _ref;
-      switch (game.state) {
-        case "over":
-          showOver();
-          break;
-        case "paused":
-          showPaused();
-      }
-      clear_board();
-      ypos = game.font_size * 1.1;
+    process_disp_data = function() {
+      var brick_x, brick_y, column, column_index, has_won, line_cnt, line_offset, line_width, printed, row, row_index, xpos, ypos, _i, _j, _len, _len1, _ref;
+      has_won = true;
+      game.board_disp = {};
       line_offset = game.disp_data.length * game.font_size;
-      won = true;
+      ypos = game.font_size * 1.1;
       _ref = game.disp_data;
       for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
         row = _ref[row_index];
-        text_color = get_color(row_index);
         line_cnt = 0;
         printed = 0;
         if (game.line_breaks.length > 0) {
@@ -267,23 +259,55 @@
             } else {
               line_width = game.line_breaks[line_cnt] - game.line_breaks[line_cnt - 1];
             }
-            xpos = Math.round((game.width / 2) - (line_width * game.char_width / 2) - (game.space_width * game.char_width));
+            xpos = Math.round((game.width / 2) - (line_width * game.char_width / 2));
           }
           brick_x = xpos;
           brick_y = ypos + (line_cnt * (game.font_size * game.disp_data.length));
           if (column !== " ") {
-            won = false;
+            has_won = false;
             if (!((game.x - game.ball_radius > brick_x + game.char_width) || (game.x + game.ball_radius < brick_x) || (game.y - game.ball_radius > brick_y + game.font_size) || (game.y + game.ball_radius < brick_y))) {
               collision(brick_x, brick_y);
               game.disp_data[row_index][column_index] = " ";
             }
           }
-          ctx.fillStyle = text_color;
-          ctx.fillText(column, brick_x, brick_y);
+          if (brick_y in game.board_disp) {
+            game.board_disp[brick_y] += column;
+          } else {
+            game.board_disp[brick_y] = column;
+          }
           xpos += game.char_width;
         }
         ypos += game.font_size;
       }
+      return has_won;
+    };
+    disp_board = function() {
+      var num_rows, row, text_color, xpos, yval, _ref, _results;
+      num_rows = 0;
+      _ref = game.board_disp;
+      _results = [];
+      for (yval in _ref) {
+        row = _ref[yval];
+        xpos = Math.round((game.width / 2) - (row.length * game.char_width / 2));
+        text_color = get_color(num_rows);
+        ctx.fillStyle = text_color;
+        ctx.fillText(row, xpos, +yval);
+        _results.push(num_rows += 1);
+      }
+      return _results;
+    };
+    game_loop = function() {
+      var ball_x, ball_y, won;
+      switch (game.state) {
+        case "over":
+          showOver();
+          break;
+        case "paused":
+          showPaused();
+      }
+      clear_board();
+      won = process_disp_data();
+      disp_board();
       if (game.state === "running") {
         if (won && game.disp_data.length > 0) {
           showWin();
@@ -332,8 +356,8 @@
       paddle_height: 10,
       paddle_width: 100,
       font_name: "'Courier New', Monospace",
-      default_str: "Merry Christmas",
-      default_font: "acrobatic"
+      default_str: "ascii breakout!!",
+      default_font: "standard"
     };
     game_defaults = {
       dx: 4,
@@ -345,6 +369,7 @@
       state: "splash",
       paddle_color: "#c84848",
       disp_data: [],
+      board_disp: {},
       word_boundaries: [],
       space_width: 0,
       line_breaks: [],
