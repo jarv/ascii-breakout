@@ -332,8 +332,8 @@
       paddle_height: 10,
       paddle_width: 100,
       font_name: "'Courier New', Monospace",
-      default_str: "Merry Christmas",
-      default_font: "acrobatic"
+      default_str: "ascii breakout!!",
+      default_font: "standard"
     };
     game_defaults = {
       dx: 4,
