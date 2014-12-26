@@ -3,7 +3,7 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(function() {
-    var cfg, cfg_defaults, clear_board, collision, create_line_breaks, ctx, disp_board, draw_circle, draw_rect, game, game_defaults, game_loop, gen_disp_data, get_color, process_disp_data, showOver, showPaused, showRunning, showSplash, showWin, update_board_cfg;
+    var cfg, cfg_defaults, clear_board, collision, create_disp_data_with_breaks, create_line_breaks, ctx, disp_board, draw_ascii_ball, draw_paddle, game, game_defaults, game_loop, gen_disp_data, get_color, process_disp_data, showOver, showPaused, showRunning, showSplash, showWin, update_board_cfg;
     $(".select-box label").hover(function() {
       $(this).closest("label").css("z-index", 1);
       $(this).animate({
@@ -133,19 +133,33 @@
       }
       e.preventDefault();
     });
-    draw_circle = function(x, y, r) {
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2, true);
+    draw_ascii_ball = function(x, y) {
+      var i, r, row, _i, _ref;
       ctx.fillStyle = game.paddle_color;
-      ctx.closePath();
-      ctx.fill();
+      for (r = _i = 0, _ref = game.ball.rows - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; r = 0 <= _ref ? ++_i : --_i) {
+        row = ((function() {
+          var _j, _ref1, _results;
+          _results = [];
+          for (i = _j = 1, _ref1 = game.ball.cols; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 1 <= _ref1 ? ++_j : --_j) {
+            _results.push("O");
+          }
+          return _results;
+        })()).join("");
+        ctx.fillText(row, x, y + r * game.font_size);
+      }
     };
-    draw_rect = function(x, y, w, h) {
-      ctx.beginPath();
-      ctx.rect(x, y, w, h);
+    draw_paddle = function(paddle_x) {
+      var i, paddle;
       ctx.fillStyle = game.paddle_color;
-      ctx.closePath();
-      ctx.fill();
+      paddle = "[" + ((function() {
+        var _i, _ref, _results;
+        _results = [];
+        for (i = _i = 1, _ref = game.paddle.cols - 2; 1 <= _ref ? _i <= _ref : _i >= _ref; i = 1 <= _ref ? ++_i : --_i) {
+          _results.push("O");
+        }
+        return _results;
+      })()).join("") + "]";
+      ctx.fillText(paddle, paddle_x, game.height - game.paddle.h);
     };
     clear_board = function() {
       ctx.clearRect(0, 0, game.width, game.height);
@@ -176,6 +190,35 @@
         }
         return update_board_cfg();
       });
+    };
+    create_disp_data_with_breaks = function() {
+      var column, column_index, line_width, new_disp_data, row, row_index, xpos, _i, _len, _ref, _results;
+      new_disp_data = [];
+      _ref = game.disp_data;
+      _results = [];
+      for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
+        row = _ref[row_index];
+        _results.push((function() {
+          var _j, _len1, _results1;
+          _results1 = [];
+          for (column_index = _j = 0, _len1 = row.length; _j < _len1; column_index = ++_j) {
+            column = row[column_index];
+            if (__indexOf.call(game.line_breaks, column_index) >= 0) {
+              line_cnt += 1;
+              if (game.line_breaks.length === line_cnt) {
+                line_width = row.length - game.line_breaks[line_cnt - 1];
+              } else {
+                line_width = game.line_breaks[line_cnt] - game.line_breaks[line_cnt - 1];
+              }
+              _results1.push(xpos = Math.round((game.width / 2) - (line_width * game.char_width / 2)));
+            } else {
+              _results1.push(void 0);
+            }
+          }
+          return _results1;
+        })());
+      }
+      return _results;
     };
     create_line_breaks = function() {
       var col, index, last_word_boundary, line_breaks, xpos, _i, _len, _ref;
@@ -265,7 +308,7 @@
           brick_y = ypos + (line_cnt * (game.font_size * game.disp_data.length));
           if (column !== " ") {
             has_won = false;
-            if (!((game.x - game.ball_radius > brick_x + game.char_width) || (game.x + game.ball_radius < brick_x) || (game.y - game.ball_radius > brick_y + game.font_size) || (game.y + game.ball_radius < brick_y))) {
+            if (!((game.x > brick_x + game.char_width) || (game.x + game.ball.w < brick_x) || (game.y > brick_y + game.font_size) || (game.y + game.ball.h < brick_y))) {
               collision(brick_x, brick_y);
               game.disp_data[row_index][column_index] = " ";
             }
@@ -313,31 +356,31 @@
           showWin();
         }
         if (!game.paddle_x) {
-          game.paddle_x = game.width / 2;
+          game.paddle_x = game.width / 2 - game.paddle.w / 2;
         }
         if (game.ball_locked) {
-          ball_x = Math.floor(game.paddle_x + (cfg.paddle_width / 2));
-          ball_y = Math.floor(game.height - cfg.paddle_height - game.ball_radius - 10);
+          ball_x = Math.floor(game.paddle_x + (game.paddle.w / 2) - (game.ball.w / 2));
+          ball_y = Math.floor(game.height - game.paddle.h - (game.ball.h + 10));
           game.x = ball_x;
           game.y = ball_y;
         } else {
           ball_x = game.x;
           ball_y = game.y;
         }
-        draw_circle(ball_x, ball_y, game.ball_radius);
+        draw_ascii_ball(ball_x, ball_y);
         if (game.right_down) {
           game.paddle_x += 5;
         } else if (game.left_down) {
           game.paddle_x -= 5;
         }
-        draw_rect(game.paddle_x, game.height - cfg.paddle_height, cfg.paddle_width, cfg.paddle_height);
-        if (game.x + game.ball_radius > game.width || game.x - game.ball_radius < 0) {
+        draw_paddle(game.paddle_x);
+        if (game.x + game.ball.w > game.width || game.x < 0) {
           game.dx = -game.dx;
         }
-        if (game.y - game.ball_radius < 0) {
+        if (game.y < 0) {
           game.dy = -game.dy;
-        } else if (game.y + game.ball_radius > game.height - cfg.paddle_height) {
-          if (game.x + game.ball_radius > game.paddle_x && game.x - game.ball_radius < (game.paddle_x + cfg.paddle_width)) {
+        } else if (game.y + game.ball.h > (game.height - game.paddle.h)) {
+          if (game.x + game.ball.w > game.paddle_x && game.x < (game.paddle_x + game.paddle.w)) {
             game.dy = -game.dy;
           } else {
             if (game.state === "running") {
@@ -353,8 +396,6 @@
       }
     };
     cfg_defaults = {
-      paddle_height: 10,
-      paddle_width: 100,
       font_name: "'Courier New', Monospace",
       default_str: "ascii breakout!!",
       default_font: "standard"
@@ -373,7 +414,18 @@
       word_boundaries: [],
       space_width: 0,
       line_breaks: [],
-      ball_radius: 25,
+      ball: {
+        'cols': 3,
+        'rows': 2,
+        'w': 0,
+        'h': 0
+      },
+      paddle: {
+        'cols': 9,
+        'rows': 1,
+        'w': 0,
+        'h': 10
+      },
       width: 0,
       height: 0,
       mouse_min_x: 0,
@@ -390,9 +442,14 @@
       game.width = $("#canvas").width();
       game.height = $("#canvas").height();
       game.mouse_min_x = $("#canvas").offset().left;
-      game.mouse_max_x = game.mouse_min_x + game.width - cfg.paddle_width;
+      game.mouse_max_x = game.mouse_min_x + game.width - game.paddle.w;
+      ctx.textBaseline = "top";
       ctx.font = "" + game.font_size + "px " + cfg.font_name;
-      return game.char_width = Math.round(ctx.measureText(".").width);
+      game.char_width = Math.round(ctx.measureText(".").width);
+      game.ball.w = game.ball.cols * game.char_width;
+      game.ball.h = game.ball.rows * game.font_size;
+      game.paddle.w = game.paddle.cols * game.char_width;
+      return game.paddle.h = game.paddle.rows * game.font_size;
     };
     $(window).resize(function() {
       return update_board_cfg();
