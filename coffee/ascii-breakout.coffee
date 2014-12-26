@@ -85,25 +85,24 @@ $(() ->
       when "paused"
         if  (evt.keyCode == 27) #  esc
           showRunning()
-      
       when "running"
-        if (evt.keyCode == 39) # ->
-          game.right_down = true
-        else if (evt.keyCode == 37) # <-
-          game.left_down = true
-        else if (evt.keyCode == 27) # esc
+        if (evt.keyCode == 27) # esc
           showPaused()
+    if (evt.keyCode == 39) # ->
+      game.right_down = true
+    else if (evt.keyCode == 37) # <-
+      game.left_down = true
 
     return
   )
 
   $(document).keyup((evt) ->
-    switch game.state
-      when "running"
-        if (evt.keyCode == 39)
-          game.right_down = false
-        else if (evt.keyCode == 37)
-          game.left_down = false
+    if (evt.keyCode == 39) # ->
+      game.right_down = false
+      game.right_acc = 0
+    else if (evt.keyCode == 37) # <-
+      game.left_down = false
+      game.left_acc = 0
     return
   )
 
@@ -345,9 +344,13 @@ $(() ->
       draw_ascii_ball(ball_x, ball_y)
 
       if game.right_down
-        game.paddle_x += 5
+        if game.paddle_x + game.paddle.w < game.width
+          game.paddle_x += Math.floor(5 + game.right_acc)
+          game.right_acc += cfg.acc_rate
       else if game.left_down
-        game.paddle_x -= 5
+        if game.paddle_x > 0
+          game.paddle_x -= Math.floor(5 + game.left_acc)
+          game.left_acc += cfg.acc_rate
       draw_paddle(game.paddle_x)
 
       # handle wall collisions
@@ -377,6 +380,7 @@ $(() ->
     font_name: "'Courier New', Monospace"
     default_str: "ascii breakout!!"
     default_font: "standard"
+    acc_rate: .5
   }
 
   game_defaults = {
@@ -388,6 +392,8 @@ $(() ->
     y: 150
     right_down: false
     left_down: false
+    right_acc: 0
+    left_acc: 0
 
     state: "splash"
     paddle_color: "#c84848"
