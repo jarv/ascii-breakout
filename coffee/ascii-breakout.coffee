@@ -132,20 +132,19 @@ $(() ->
     return
   )
 
-  draw_circle = (x, y, r) ->
-    ctx.beginPath()
-    ctx.arc(x, y, r, 0, Math.PI*2, true)
+  draw_ascii_ball = (x, y) ->
+   
     ctx.fillStyle = game.paddle_color
-    ctx.closePath()
-    ctx.fill()
+    for r in [0..(game.ball.rows - 1)]
+      row = ("O" for i in [1..game.ball.cols]).join("")
+      ctx.fillText(row, x, y + r * game.font_size)
     return
 
-  draw_rect = (x, y, w, h) ->
-    ctx.beginPath()
-    ctx.rect(x, y, w, h)
+
+  draw_paddle = (paddle_x) ->
     ctx.fillStyle = game.paddle_color
-    ctx.closePath()
-    ctx.fill()
+    paddle = "[" + ("O" for i in [1..(game.paddle.cols - 2)]).join("") + "]"
+    ctx.fillText(paddle, paddle_x, game.height - game.paddle.h)
     return
 
   clear_board = () ->
@@ -177,6 +176,20 @@ $(() ->
       update_board_cfg()
     )
     return
+
+  create_disp_data_with_breaks = () ->
+    new_disp_data = []
+
+    for row, row_index in game.disp_data
+      for column, column_index in row
+        if column_index in game.line_breaks
+          line_cnt += 1
+          if game.line_breaks.length == line_cnt
+            line_width = row.length - game.line_breaks[line_cnt - 1]
+          else
+            line_width = game.line_breaks[line_cnt] - game.line_breaks[line_cnt - 1]
+
+          xpos = Math.round((game.width / 2) - ( line_width * game.char_width / 2))
 
   create_line_breaks = () ->
     line_breaks = []
@@ -268,17 +281,16 @@ $(() ->
           else
             line_width = game.line_breaks[line_cnt] - game.line_breaks[line_cnt - 1]
 
-          # xpos = Math.round((game.width / 2) - ( line_width * game.char_width / 2) - (game.space_width * game.char_width))
           xpos = Math.round((game.width / 2) - ( line_width * game.char_width / 2))
     
         brick_x = xpos
         brick_y = ypos + (line_cnt * (game.font_size * game.disp_data.length))
         if column != " "
           has_won = false
-          if ! ((game.x - game.ball_radius > brick_x + game.char_width) \
-              or (game.x + game.ball_radius < brick_x) \
-              or (game.y - game.ball_radius > brick_y + game.font_size) \
-              or (game.y + game.ball_radius < brick_y))
+          if ! ((game.x  > brick_x + game.char_width) \
+              or (game.x + game.ball.w < brick_x) \
+              or (game.y  > brick_y + game.font_size) \
+              or (game.y + game.ball.h < brick_y))
             
             collision(brick_x, brick_y)
             game.disp_data[row_index][column_index] = " "
@@ -319,33 +331,33 @@ $(() ->
         showWin()
 
       if not game.paddle_x
-        game.paddle_x = game.width / 2
+        game.paddle_x = game.width / 2 - game.paddle.w / 2
 
       if game.ball_locked
-        ball_x = Math.floor(game.paddle_x + (cfg.paddle_width / 2))
-        ball_y = Math.floor(game.height - cfg.paddle_height - game.ball_radius - 10)
+        ball_x = Math.floor(game.paddle_x + (game.paddle.w / 2) - (game.ball.w / 2))
+        ball_y = Math.floor(game.height - game.paddle.h - (game.ball.h + 10) )
         game.x = ball_x
         game.y = ball_y
       else
         ball_x = game.x
         ball_y = game.y
 
-      draw_circle(ball_x, ball_y, game.ball_radius)
+      draw_ascii_ball(ball_x, ball_y)
 
       if game.right_down
         game.paddle_x += 5
       else if game.left_down
         game.paddle_x -= 5
-      draw_rect(game.paddle_x, game.height - cfg.paddle_height, cfg.paddle_width, cfg.paddle_height)
+      draw_paddle(game.paddle_x)
 
       # handle wall collisions
-      if (game.x + game.ball_radius > game.width or game.x - game.ball_radius < 0)
+      if (game.x + game.ball.w > game.width or game.x < 0)
         game.dx = -game.dx
-      if (game.y - game.ball_radius < 0)
+      if (game.y < 0)
         game.dy = -game.dy
-      else if (game.y + game.ball_radius > game.height - cfg.paddle_height)
+      else if (game.y + game.ball.h > (game.height - game.paddle.h))
         # ball is at the bottom of the board
-        if (game.x + game.ball_radius > game.paddle_x and game.x - game.ball_radius < (game.paddle_x + cfg.paddle_width))
+        if (game.x + game.ball.w > game.paddle_x and game.x < (game.paddle_x + game.paddle.w))
           # paddle collision
           game.dy = -game.dy
         else
@@ -362,8 +374,6 @@ $(() ->
   cfg_defaults = {
     # cfg have vars that remain the same
     # through a single game
-    paddle_height: 10
-    paddle_width: 100
     font_name: "'Courier New', Monospace"
     default_str: "ascii breakout!!"
     default_font: "standard"
@@ -398,8 +408,21 @@ $(() ->
     # depending on the window size
     line_breaks: []
 
-    ball_radius: 25
+    # ball
+    # Small  O
+    #  1x1
+    #
+    # Medium OOO
+    #  3x2   OOO
+    # 
+    # Large  OOOOO
+    #  5x3   OOOOO
+    #        OOOOO
 
+    ball: {'cols': 3, 'rows': 2, 'w': 0, 'h': 0}
+    # paddle 
+    # [OOOOOOO]
+    paddle: {'cols': 9, 'rows': 1, 'w': 0, 'h': 10}
     # overridden by width of fullscreen
     width: 0
     height: 0
@@ -424,11 +447,18 @@ $(() ->
     game.width =  $("#canvas").width()
     game.height = $("#canvas").height()
     game.mouse_min_x = $("#canvas").offset().left
-    game.mouse_max_x = game.mouse_min_x + game.width - cfg.paddle_width
+    game.mouse_max_x = game.mouse_min_x + game.width - game.paddle.w
     # move the paddle to the middle of the screen
     # after resize
+    ctx.textBaseline = "top"
     ctx.font = "#{game.font_size}px #{cfg.font_name}"
     game.char_width = Math.round(ctx.measureText(".").width)
+  
+    game.ball.w = game.ball.cols * game.char_width
+    game.ball.h = game.ball.rows * game.font_size
+    game.paddle.w = game.paddle.cols * game.char_width
+    game.paddle.h = game.paddle.rows * game.font_size
+
   $(window).resize(() ->
     update_board_cfg()
   )
