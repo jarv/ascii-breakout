@@ -3,7 +3,7 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(function() {
-    var cfg, cfg_defaults, clear_board, collision, create_disp_data_with_breaks, create_line_breaks, ctx, disp_board, draw_ascii_ball, draw_paddle, game, game_defaults, game_loop, gen_disp_data, get_color, process_disp_data, showOver, showPaused, showRunning, showSplash, showWin, update_board_cfg;
+    var cfg, cfg_defaults, clear_board, collision, create_board_disp, create_line_breaks, ctx, disp_board, draw_ascii_ball, draw_paddle, game, game_defaults, game_loop, gen_disp_data, get_color, process_board_disp, showOver, showPaused, showRunning, showSplash, showWin, update_board_cfg;
     $(".select-box label").hover(function() {
       $(this).closest("label").css("z-index", 1);
       $(this).animate({
@@ -180,6 +180,7 @@
         game.word_boundaries = word_boundaries;
         game.space_width = space_width;
         game.line_breaks = create_line_breaks();
+        game.board_disp = create_board_disp();
         encoded_str = encodeURI(str);
         encoded_font = encodeURI(game.figlet_font);
         encoded_font_size = encodeURI(game.font_size);
@@ -191,41 +192,9 @@
         return update_board_cfg();
       });
     };
-    create_disp_data_with_breaks = function() {
-      var column, column_index, line_width, new_disp_data, row, row_index, xpos, _i, _len, _ref, _results;
-      new_disp_data = [];
-      _ref = game.disp_data;
-      _results = [];
-      for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
-        row = _ref[row_index];
-        _results.push((function() {
-          var _j, _len1, _results1;
-          _results1 = [];
-          for (column_index = _j = 0, _len1 = row.length; _j < _len1; column_index = ++_j) {
-            column = row[column_index];
-            if (__indexOf.call(game.line_breaks, column_index) >= 0) {
-              line_cnt += 1;
-              if (game.line_breaks.length === line_cnt) {
-                line_width = row.length - game.line_breaks[line_cnt - 1];
-              } else {
-                line_width = game.line_breaks[line_cnt] - game.line_breaks[line_cnt - 1];
-              }
-              _results1.push(xpos = Math.round((game.width / 2) - (line_width * game.char_width / 2)));
-            } else {
-              _results1.push(void 0);
-            }
-          }
-          return _results1;
-        })());
-      }
-      return _results;
-    };
     create_line_breaks = function() {
       var col, index, last_word_boundary, line_breaks, xpos, _i, _len, _ref;
       line_breaks = [];
-      if (game.disp_data.length === 0) {
-        return line_breaks;
-      }
       xpos = 0;
       last_word_boundary = false;
       _ref = game.disp_data[0];
@@ -246,6 +215,11 @@
             xpos = 0;
           }
         }
+      }
+      if (line_breaks.length === 0) {
+        line_breaks.push(game.disp_data[0].length);
+      } else if (line_breaks[line_breaks.length - 1] < game.disp_data[0].length) {
+        line_breaks.push(game.disp_data[0].length);
       }
       return line_breaks;
     };
@@ -276,47 +250,41 @@
           }
       }
     };
-    process_disp_data = function() {
-      var brick_x, brick_y, column, column_index, has_won, line_cnt, line_offset, line_width, printed, row, row_index, xpos, ypos, _i, _j, _len, _len1, _ref;
+    create_board_disp = function() {
+      var board_disp, break_pos, last_break, line_cnt, row, row_index, sliced_row, _i, _j, _len, _len1, _ref, _ref1;
+      board_disp = [];
+      line_cnt = 0;
+      last_break = 0;
+      _ref = game.line_breaks;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        break_pos = _ref[_i];
+        _ref1 = game.disp_data;
+        for (row_index = _j = 0, _len1 = _ref1.length; _j < _len1; row_index = ++_j) {
+          row = _ref1[row_index];
+          sliced_row = row.slice(last_break, break_pos);
+          board_disp[row_index + (line_cnt * game.disp_data.length)] = sliced_row;
+        }
+        last_break = break_pos;
+        line_cnt += 1;
+      }
+      return board_disp;
+    };
+    process_board_disp = function() {
+      var column, column_index, has_won, row, row_index, xpos, ypos, _i, _j, _len, _len1, _ref;
+      ypos = 0;
       has_won = true;
-      game.board_disp = {};
-      line_offset = game.disp_data.length * game.font_size;
-      ypos = game.font_size * 1.1;
-      _ref = game.disp_data;
+      _ref = game.board_disp;
       for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
         row = _ref[row_index];
-        line_cnt = 0;
-        printed = 0;
-        if (game.line_breaks.length > 0) {
-          line_width = game.line_breaks[0];
-        } else {
-          line_width = row.length;
-        }
-        xpos = Math.round((game.width / 2) - (line_width * game.char_width / 2));
+        xpos = Math.round((game.width / 2) - (row.length * game.char_width / 2));
         for (column_index = _j = 0, _len1 = row.length; _j < _len1; column_index = ++_j) {
           column = row[column_index];
-          if (__indexOf.call(game.line_breaks, column_index) >= 0) {
-            line_cnt += 1;
-            if (game.line_breaks.length === line_cnt) {
-              line_width = row.length - game.line_breaks[line_cnt - 1];
-            } else {
-              line_width = game.line_breaks[line_cnt] - game.line_breaks[line_cnt - 1];
-            }
-            xpos = Math.round((game.width / 2) - (line_width * game.char_width / 2));
-          }
-          brick_x = xpos;
-          brick_y = ypos + (line_cnt * (game.font_size * game.disp_data.length));
           if (column !== " ") {
             has_won = false;
-            if (!((game.x > brick_x + game.char_width) || (game.x + game.ball.w < brick_x) || (game.y > brick_y + game.font_size) || (game.y + game.ball.h < brick_y))) {
-              collision(brick_x, brick_y);
-              game.disp_data[row_index][column_index] = " ";
+            if (!((game.x > xpos + game.char_width) || (game.x + game.ball.w < xpos) || (game.y > ypos + game.font_size) || (game.y + game.ball.h < ypos))) {
+              collision(xpos, ypos);
+              game.board_disp[row_index][column_index] = " ";
             }
-          }
-          if (brick_y in game.board_disp) {
-            game.board_disp[brick_y] += column;
-          } else {
-            game.board_disp[brick_y] = column;
           }
           xpos += game.char_width;
         }
@@ -325,17 +293,17 @@
       return has_won;
     };
     disp_board = function() {
-      var num_rows, row, text_color, xpos, yval, _ref, _results;
-      num_rows = 0;
+      var row, row_index, text_color, xpos, ypos, _i, _len, _ref, _results;
+      ypos = 0;
       _ref = game.board_disp;
       _results = [];
-      for (yval in _ref) {
-        row = _ref[yval];
+      for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
+        row = _ref[row_index];
         xpos = Math.round((game.width / 2) - (row.length * game.char_width / 2));
-        text_color = get_color(num_rows);
+        text_color = get_color(row_index);
         ctx.fillStyle = text_color;
-        ctx.fillText(row, xpos, +yval);
-        _results.push(num_rows += 1);
+        ctx.fillText(row.join(""), xpos, ypos);
+        _results.push(ypos += game.font_size);
       }
       return _results;
     };
@@ -349,7 +317,7 @@
           showPaused();
       }
       clear_board();
-      won = process_disp_data();
+      won = process_board_disp();
       disp_board();
       if (game.state === "running") {
         if (won && game.disp_data.length > 0) {
@@ -419,7 +387,7 @@
       state: "splash",
       paddle_color: "#c84848",
       disp_data: [],
-      board_disp: {},
+      board_disp: [],
       word_boundaries: [],
       space_width: 0,
       line_breaks: [],

@@ -165,6 +165,8 @@ $(() ->
       game.word_boundaries = word_boundaries
       game.space_width = space_width
       game.line_breaks = create_line_breaks()
+      game.board_disp = create_board_disp()
+
       encoded_str = encodeURI(str)
       encoded_font = encodeURI(game.figlet_font)
       encoded_font_size = encodeURI(game.font_size)
@@ -176,26 +178,9 @@ $(() ->
     )
     return
 
-  create_disp_data_with_breaks = () ->
-    new_disp_data = []
-
-    for row, row_index in game.disp_data
-      for column, column_index in row
-        if column_index in game.line_breaks
-          line_cnt += 1
-          if game.line_breaks.length == line_cnt
-            line_width = row.length - game.line_breaks[line_cnt - 1]
-          else
-            line_width = game.line_breaks[line_cnt] - game.line_breaks[line_cnt - 1]
-
-          xpos = Math.round((game.width / 2) - ( line_width * game.char_width / 2))
-
   create_line_breaks = () ->
+
     line_breaks = []
-
-    if game.disp_data.length == 0
-      return line_breaks
-
     xpos = 0
     last_word_boundary = false
 
@@ -214,6 +199,14 @@ $(() ->
           # force a line break
           line_breaks.push(index)
           xpos = 0
+
+    if line_breaks.length == 0
+      # If there are no line breaks, return the length
+      # of the row
+      line_breaks.push(game.disp_data[0].length)
+    else if line_breaks[line_breaks.length - 1] < game.disp_data[0].length
+      # add any remaining characters as the last break
+      line_breaks.push(game.disp_data[0].length)
 
     return line_breaks
 
@@ -256,60 +249,46 @@ $(() ->
 
     return
 
+  create_board_disp = () ->
+    board_disp = []
+    line_cnt = 0
+    last_break = 0
+    for break_pos in game.line_breaks
+      for row, row_index in game.disp_data
+        sliced_row = row.slice(last_break, break_pos)
+        board_disp[row_index + (line_cnt * game.disp_data.length)] = sliced_row
+      last_break = break_pos
+      line_cnt += 1
+    return board_disp
 
-  process_disp_data  = () ->
+  process_board_disp  = () ->
+    ypos = 0
     has_won = true
-    game.board_disp = {}
-    line_offset = (game.disp_data.length * game.font_size)
-    ypos = game.font_size * 1.1
-    for row, row_index in game.disp_data
-      line_cnt = 0
-      printed = 0
-      if game.line_breaks.length > 0
-        line_width = game.line_breaks[0]
-      else
-        line_width = row.length
-      xpos = Math.round((game.width / 2) - ( line_width * game.char_width / 2))
-
+    for row, row_index in game.board_disp
+      xpos = Math.round((game.width / 2) - ( row.length * game.char_width / 2))
       for column, column_index in row
-
-        if column_index in game.line_breaks
-          line_cnt += 1
-          if game.line_breaks.length == line_cnt
-            line_width = row.length - game.line_breaks[line_cnt - 1]
-          else
-            line_width = game.line_breaks[line_cnt] - game.line_breaks[line_cnt - 1]
-
-          xpos = Math.round((game.width / 2) - ( line_width * game.char_width / 2))
-    
-        brick_x = xpos
-        brick_y = ypos + (line_cnt * (game.font_size * game.disp_data.length))
         if column != " "
           has_won = false
-          if ! ((game.x  > brick_x + game.char_width) \
-              or (game.x + game.ball.w < brick_x) \
-              or (game.y  > brick_y + game.font_size) \
-              or (game.y + game.ball.h < brick_y))
-            
-            collision(brick_x, brick_y)
-            game.disp_data[row_index][column_index] = " "
-        if brick_y of game.board_disp
-          game.board_disp[brick_y] += column
-        else
-          game.board_disp[brick_y] = column
+          if ! ((game.x  > xpos + game.char_width) \
+              or (game.x + game.ball.w < xpos) \
+              or (game.y  > ypos + game.font_size) \
+              or (game.y + game.ball.h < ypos))
+            collision(xpos, ypos)
+            game.board_disp[row_index][column_index] = " "
 
         xpos += game.char_width
       ypos += game.font_size
     return has_won
 
   disp_board = () ->
-    num_rows = 0
-    for yval, row of game.board_disp
+    ypos = 0
+    for row, row_index in game.board_disp
       xpos = Math.round((game.width / 2) - ( row.length * game.char_width / 2))
-      text_color = get_color(num_rows)
+      text_color = get_color(row_index)
       ctx.fillStyle = text_color
-      ctx.fillText(row, xpos, +yval)
-      num_rows += 1
+      ctx.fillText(row.join(""), xpos, ypos)
+      ypos += game.font_size
+
 
   game_loop = () ->
     # set to false in process_disp_data() 
@@ -321,7 +300,7 @@ $(() ->
         showPaused()
 
     clear_board()
-    won = process_disp_data()
+    won = process_board_disp()
     disp_board()
 
     if game.state == "running"
@@ -402,7 +381,7 @@ $(() ->
     disp_data: []
     # how the characters are displayed
     # on canvas (after wrapping)
-    board_disp: {}
+    board_disp: []
 
     # list of indexes where word
     # boundaries (used for word wrapping)
@@ -468,6 +447,7 @@ $(() ->
   $(window).resize(() ->
     update_board_cfg()
   )
+
   ctx = $("#canvas")[0].getContext("2d")
   # update game state vars with defaults
   game = $.extend({}, game_defaults)

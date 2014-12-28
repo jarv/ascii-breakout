@@ -8,6 +8,6 @@ github:
 	echo "ascii-breakout.com" > $(OUTPUTDIR)/CNAME
 	ghp-import -p static/
 
-cwatch:
+wcoffee:
 	coffee -o static/js -cw coffee/
 	
