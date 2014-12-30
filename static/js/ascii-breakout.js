@@ -3,7 +3,10 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(function() {
-    var cfg, cfg_defaults, clear_board, collision, create_board_disp, create_line_breaks, ctx, disp_board, draw_ascii_ball, draw_paddle, game, game_defaults, game_loop, gen_disp_data, get_color, process_board_disp, showOver, showPaused, showRunning, showSplash, showWin, update_board_cfg;
+    var cfg, cfg_defaults, checkCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getColor, inc_w_limit, processBoardDisp, showOver, showPaused, showRunning, showSplash, showWin, sign, updateBoardCfg;
+    sign = function(x) {
+      return x > 0 ? 1 : x < 0 ? -1 : 0;
+    };
     $(".select-box label").hover(function() {
       $(this).closest("label").css("z-index", 1);
       $(this).animate({
@@ -29,11 +32,11 @@
       var font;
       font = $('input[name=font]:checked').val();
       game.figlet_font = font;
-      return gen_disp_data($('input[name=str]').val());
+      return genDispData($('input[name=str]').val());
     });
     $("input[type=range]").change(function() {
       game.font_size = +$("input[type=range]").val();
-      return gen_disp_data($('input[name=str]').val());
+      return genDispData($('input[name=str]').val());
     });
     showWin = function() {
       game.state = "win";
@@ -78,7 +81,7 @@
           }
       }
     });
-    get_color = function(num) {
+    getColor = function(num) {
       var index;
       index = num % game.ascii_colors.length;
       return game.ascii_colors[index];
@@ -97,35 +100,52 @@
       }
       if (evt.keyCode === 39) {
         game.right_down = true;
+        game.paddle_dir = 1;
       } else if (evt.keyCode === 37) {
         game.left_down = true;
+        game.paddle_dir = -1;
       }
     });
     $(document).keyup(function(evt) {
       if (evt.keyCode === 39) {
         game.right_down = false;
         game.right_acc = 0;
+        game.paddle_dir = 0;
       } else if (evt.keyCode === 37) {
         game.left_down = false;
         game.left_acc = 0;
+        game.paddle_dir = 0;
       }
     });
     $(document).bind('touchmove mousemove', function(e) {
       var cX;
       switch (game.state) {
         case "running":
+          if (game.m_timeout !== null) {
+            clearTimeout(game.m_timeout);
+          }
+          game.m_timeout = setTimeout(function() {
+            game.m_timeout = null;
+            return game.paddle_dir = 0;
+          }, 50);
           if (e.originalEvent.touches) {
             cX = e.originalEvent.touches[0].pageX;
           } else {
             cX = e.pageX;
           }
           if (cX > game.mouse_min_x && cX < game.mouse_max_x) {
+            if (cX - game.mouse_min_x < game.paddle_x) {
+              game.paddle_dir = -1;
+            } else if (cX - game.mouse_min_x > game.paddle_x) {
+              game.paddle_dir = 1;
+            }
+            game.l_paddle_x = game.paddle_x;
             return game.paddle_x = cX - game.mouse_min_x;
           }
       }
     });
     $('input[name=str]').on('input', function(e) {
-      gen_disp_data($('input[name=str]').val());
+      genDispData($('input[name=str]').val());
     });
     $("#ascii-submit").submit(function(e) {
       if ($('input[name=str]').val().length > 1) {
@@ -133,9 +153,17 @@
       }
       e.preventDefault();
     });
-    draw_ascii_ball = function(x, y) {
+    drawAsciiBall = function(x, y) {
       var i, r, row, _i, _ref;
-      ctx.fillStyle = game.paddle_color;
+      ctx_g.save();
+      ctx_g.translate(game.l_x + game.ball.w_h, game.l_y + game.ball.h_h);
+      ctx_g.rotate(game.l_ball_angle);
+      ctx_g.clearRect(-game.ball.w_h - game.char_width, -game.ball.h_h - game.font_size, game.ball.w + game.char_width * 2, game.ball.h + game.font_size * 2);
+      ctx_g.restore();
+      ctx_g.fillStyle = game.paddle_color;
+      ctx_g.save();
+      ctx_g.translate(x + game.ball.w_h, y + game.ball.h_h);
+      ctx_g.rotate(game.ball_angle);
       for (r = _i = 0, _ref = game.ball.rows - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; r = 0 <= _ref ? ++_i : --_i) {
         row = ((function() {
           var _j, _ref1, _results;
@@ -145,12 +173,25 @@
           }
           return _results;
         })()).join("");
-        ctx.fillText(row, x, y + r * game.font_size);
+        ctx_g.fillText(row, -game.ball.w_h, -game.ball.h_h + r * game.font_size);
+      }
+      ctx_g.restore();
+      if (game.loop_cnt % game.ball_spin_speed === 0) {
+        game.l_ball_angle = game.ball_angle;
+        game.ball_angle += game.ball_spin * game.ball_da;
       }
     };
-    draw_paddle = function(paddle_x) {
+    inc_w_limit = function(value, inc, max, min) {
+      if (inc < 0) {
+        return Math.max(min, value + inc);
+      } else if (inc >= 0) {
+        return Math.min(max, value + inc);
+      }
+    };
+    drawPaddle = function(paddle_x) {
       var i, paddle;
-      ctx.fillStyle = game.paddle_color;
+      ctx_g.clearRect(0, game.height - game.paddle.h, game.width, game.paddle.h);
+      ctx_g.fillStyle = game.paddle_color;
       paddle = "[" + ((function() {
         var _i, _ref, _results;
         _results = [];
@@ -159,10 +200,7 @@
         }
         return _results;
       })()).join("") + "]";
-      ctx.fillText(paddle, paddle_x, game.height - game.paddle.h);
-    };
-    clear_board = function() {
-      ctx.clearRect(0, 0, game.width, game.height);
+      ctx_g.fillText(paddle, paddle_x, game.height - game.paddle.h);
     };
     Figlet.loadFont = function(name, fn) {
       var url;
@@ -173,14 +211,12 @@
         success: fn
       });
     };
-    gen_disp_data = function(str) {
+    genDispData = function(str) {
       Figlet.parsePhrase(str, game.figlet_font, function(disp_data, word_boundaries, space_width) {
-        var encoded_font, encoded_font_size, encoded_str;
-        game.disp_data = disp_data;
-        game.word_boundaries = word_boundaries;
+        var encoded_font, encoded_font_size, encoded_str, line_breaks;
         game.space_width = space_width;
-        game.line_breaks = create_line_breaks();
-        game.board_disp = create_board_disp();
+        line_breaks = createLineBreaks(disp_data, word_boundaries);
+        game.board_disp = createBoardDisp(disp_data, line_breaks);
         encoded_str = encodeURI(str);
         encoded_font = encodeURI(game.figlet_font);
         encoded_font_size = encodeURI(game.font_size);
@@ -189,20 +225,20 @@
         } else {
           $(".share-link").html("");
         }
-        return update_board_cfg();
+        return updateBoardCfg();
       });
     };
-    create_line_breaks = function() {
+    createLineBreaks = function(disp_data, word_boundaries) {
       var col, index, last_word_boundary, line_breaks, xpos, _i, _len, _ref;
       line_breaks = [];
       xpos = 0;
       last_word_boundary = false;
-      _ref = game.disp_data[0];
+      _ref = disp_data[0];
       for (index = _i = 0, _len = _ref.length; _i < _len; index = ++_i) {
         col = _ref[index];
         xpos += game.char_width;
         if (xpos < game.width) {
-          if (__indexOf.call(game.word_boundaries, index) >= 0) {
+          if (__indexOf.call(word_boundaries, index) >= 0) {
             last_word_boundary = index;
           }
         } else if (xpos > game.width) {
@@ -217,72 +253,74 @@
         }
       }
       if (line_breaks.length === 0) {
-        line_breaks.push(game.disp_data[0].length);
-      } else if (line_breaks[line_breaks.length - 1] < game.disp_data[0].length) {
-        line_breaks.push(game.disp_data[0].length);
+        line_breaks.push(disp_data[0].length);
+      } else if (line_breaks[line_breaks.length - 1] < disp_data[0].length) {
+        line_breaks.push(disp_data[0].length);
       }
       return line_breaks;
     };
-    collision = function(brick_x, brick_y) {
-      var c_brick_x, c_brick_y;
-      c_brick_x = brick_x + Math.round(game.char_width / 2);
-      c_brick_y = brick_y + Math.round(game.font_size / 2);
-      game.aoa = Math.atan2(game.y - c_brick_y, game.x - c_brick_x);
+    checkCollision = function(brick_x, brick_y) {
+      var aoa, c_brick_x, c_brick_y;
+      if ((game.x > brick_x + game.char_width) || (game.x + game.ball.w < brick_x) || (game.y > brick_y + game.font_size) || (game.y + game.ball.h < brick_y)) {
+        return false;
+      }
+      c_brick_x = brick_x + game.char_width_h;
+      c_brick_y = brick_y + game.font_size_h;
+      aoa = Math.atan2(game.y - c_brick_y, game.x - c_brick_x);
       switch (false) {
-        case !(game.aoa <= Math.PI / 4 && game.aoa > -Math.PI / 4):
+        case !(aoa <= Math.PI / 4 && aoa > -Math.PI / 4):
           if (game.dx <= 0) {
             game.dx = -game.dx;
           }
           break;
-        case !(game.aoa <= -Math.PI / 4 && game.aoa > -3 * Math.PI / 4):
+        case !(aoa <= -Math.PI / 4 && aoa > -3 * Math.PI / 4):
           if (game.dy >= 0) {
             game.dy = -game.dy;
           }
           break;
-        case !((game.aoa <= -3 * Math.PI && game.aoa > -Math.PI) || (game.aoa <= Math.PI && game.aoa > 3 * Math.PI / 4)):
+        case !((aoa <= -3 * Math.PI && aoa > -Math.PI) || (aoa <= Math.PI && aoa > 3 * Math.PI / 4)):
           if (game.dx >= 0) {
             game.dx = -game.dx;
           }
           break;
-        case !(game.aoa <= 3 * Math.PI / 4 && game.aoa > Math.PI / 4):
+        case !(aoa <= 3 * Math.PI / 4 && aoa > Math.PI / 4):
           if (game.dy <= 0) {
             game.dy = -game.dy;
           }
       }
+      ctx.clearRect(0, brick_y - game.font_size, game.width, game.font_size * 3);
+      return true;
     };
-    create_board_disp = function() {
-      var board_disp, break_pos, last_break, line_cnt, row, row_index, sliced_row, _i, _j, _len, _len1, _ref, _ref1;
+    createBoardDisp = function(disp_data, line_breaks) {
+      var board_disp, break_pos, last_break, line_cnt, row, row_index, sliced_row, _i, _j, _len, _len1;
       board_disp = [];
       line_cnt = 0;
       last_break = 0;
-      _ref = game.line_breaks;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        break_pos = _ref[_i];
-        _ref1 = game.disp_data;
-        for (row_index = _j = 0, _len1 = _ref1.length; _j < _len1; row_index = ++_j) {
-          row = _ref1[row_index];
+      for (_i = 0, _len = line_breaks.length; _i < _len; _i++) {
+        break_pos = line_breaks[_i];
+        for (row_index = _j = 0, _len1 = disp_data.length; _j < _len1; row_index = ++_j) {
+          row = disp_data[row_index];
           sliced_row = row.slice(last_break, break_pos);
-          board_disp[row_index + (line_cnt * game.disp_data.length)] = sliced_row;
+          board_disp[row_index + (line_cnt * disp_data.length)] = sliced_row;
         }
         last_break = break_pos;
         line_cnt += 1;
       }
       return board_disp;
     };
-    process_board_disp = function() {
+    processBoardDisp = function() {
       var column, column_index, has_won, row, row_index, xpos, ypos, _i, _j, _len, _len1, _ref;
       ypos = 0;
       has_won = true;
       _ref = game.board_disp;
       for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
         row = _ref[row_index];
-        xpos = Math.round((game.width / 2) - (row.length * game.char_width / 2));
+        xpos = game.width_h - row.length * game.char_width_h;
         for (column_index = _j = 0, _len1 = row.length; _j < _len1; column_index = ++_j) {
           column = row[column_index];
           if (column !== " ") {
             has_won = false;
-            if (!((game.x > xpos + game.char_width) || (game.x + game.ball.w < xpos) || (game.y > ypos + game.font_size) || (game.y + game.ball.h < ypos))) {
-              collision(xpos, ypos);
+            if (checkCollision(xpos, ypos)) {
               game.board_disp[row_index][column_index] = " ";
             }
           }
@@ -292,23 +330,136 @@
       }
       return has_won;
     };
-    disp_board = function() {
-      var row, row_index, text_color, xpos, ypos, _i, _len, _ref, _results;
+    doBonus = function() {
+      var bonus, num_bonuses;
+      num_bonuses = 6;
+      if (game.bonuses.length >= num_bonuses) {
+        game.bonuses = [];
+        game.paddle = game_defaults.paddle;
+        game.ball = game_defaults.ball;
+        game.fall_interval = game_defaults.fall_interval;
+        game.fall_speed = game_defaults.fall_speed;
+      }
+      while (true) {
+        bonus = Math.ceil(Math.random() * num_bonuses);
+        if (__indexOf.call(game.bonuses, bonus) < 0) {
+          break;
+        }
+      }
+      switch (bonus) {
+        case 1:
+          game.paddle.cols = 3;
+          break;
+        case 2:
+          game.paddle.cols = game_defaults.paddle.cols * 2;
+          break;
+        case 3:
+          game.ball.cols = 1;
+          game.ball.rows = 1;
+          break;
+        case 4:
+          game.ball.cols = game_defaults.ball.cols * 2;
+          game.ball.rows = game_defaults.ball.rows * 2;
+          break;
+        case 5:
+          game.fall_interval = 100;
+          break;
+        case 6:
+          game.fall_speed = function() {
+            return 3;
+          };
+      }
+      game.bonuses.push(bonus);
+      return updateBoardCfg();
+    };
+    fallingBlocks = function(l_char_row_index) {
+      var index, last_row, non_spaces, r, row_index, value, xpos, _i, _j, _len, _len1, _ref;
+      _ref = game.block_rotations.filter(function(elem) {
+        return elem.d === true;
+      });
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        r = _ref[_i];
+        if ((r.y + game.font_size > game.height - game.paddle.h) && (r.x + game.char_width > game.paddle_x && r.x < game.paddle_x + game.paddle.w)) {
+          r.d = false;
+          doBonus();
+        } else if (checkCollision(r.x, r.y)) {
+          r.d = false;
+          updateBoardCfg();
+        } else {
+          if (game.state === "running") {
+            if (game.loop_cnt % r.s === 0) {
+              if (r.l_y) {
+                ctx.save();
+                ctx.translate(r.x + game.char_width_h, r.l_y + game.font_size_h);
+                ctx.rotate(r.l_r);
+                ctx.clearRect(-game.char_width_h - game.char_width, -game.font_size_h - game.font_size, game.char_width * 3, game.font_size * 3);
+                ctx.restore();
+              }
+              ctx.save();
+              ctx.translate(r.x + game.char_width_h, r.y + game.font_size_h);
+              ctx.rotate(r.r);
+              ctx.fillText(r.c, -game.char_width_h, -game.font_size_h);
+              ctx.restore();
+              r.l_y = r.y;
+              r.y += game.font_size;
+              r.l_r = r.r;
+              r.r += Math.PI / 4;
+              if (r.y > game.height) {
+                r.d = false;
+              }
+            }
+          }
+        }
+      }
+      if (game.state === "running") {
+        if (game.loop_cnt % game.fall_interval === 0 && game.board_disp[l_char_row_index]) {
+          non_spaces = [];
+          last_row = game.board_disp[l_char_row_index];
+          for (index = _j = 0, _len1 = last_row.length; _j < _len1; index = ++_j) {
+            value = last_row[index];
+            if (value !== " ") {
+              non_spaces.push(index);
+            }
+          }
+          row_index = non_spaces[Math.floor(Math.random() * non_spaces.length)];
+          xpos = game.width_h - last_row.length * game.char_width_h;
+          game.block_rotations.push({
+            x: xpos + game.char_width * row_index,
+            y: l_char_row_index * game.font_size + game.font_size,
+            l_y: null,
+            l_r: null,
+            r: 0,
+            rs: Math.floor(Math.random() * 10 + 3),
+            c: last_row[row_index],
+            s: game.fall_speed(),
+            d: true
+          });
+          last_row[row_index] = " ";
+        }
+      }
+    };
+    dispBoard = function() {
+      var l_char_row_index, row, row_index, text_color, xpos, ypos, _i, _len, _ref;
       ypos = 0;
+      l_char_row_index = 0;
       _ref = game.board_disp;
-      _results = [];
       for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
         row = _ref[row_index];
-        xpos = Math.round((game.width / 2) - (row.length * game.char_width / 2));
-        text_color = get_color(row_index);
+        xpos = game.width_h - row.length * game.char_width_h;
+        text_color = getColor(row_index);
+        if (row.some(function(elem) {
+          return elem !== " ";
+        })) {
+          l_char_row_index = row_index;
+        }
         ctx.fillStyle = text_color;
         ctx.fillText(row.join(""), xpos, ypos);
-        _results.push(ypos += game.font_size);
+        ypos += game.font_size;
       }
-      return _results;
+      return fallingBlocks(l_char_row_index);
     };
-    game_loop = function() {
-      var ball_x, ball_y, won;
+    gameLoop = function() {
+      var won;
       switch (game.state) {
         case "over":
           showOver();
@@ -316,28 +467,22 @@
         case "paused":
           showPaused();
       }
-      clear_board();
-      won = process_board_disp();
-      disp_board();
+      won = processBoardDisp();
+      dispBoard();
       if (game.state === "running") {
-        if (won && game.disp_data.length > 0) {
+        if (won && game.board_disp.length > 0) {
           showWin();
         }
-        if (!game.paddle_x) {
-          game.paddle_x = game.width / 2 - game.paddle.w / 2;
-        }
         if (game.ball_locked) {
-          ball_x = Math.floor(game.paddle_x + (game.paddle.w / 2) - (game.ball.w / 2));
-          ball_y = Math.floor(game.height - game.paddle.h - (game.ball.h + 10));
-          game.x = ball_x;
-          game.y = ball_y;
-        } else {
-          ball_x = game.x;
-          ball_y = game.y;
+          game.l_x = game.x;
+          game.l_y = game.y;
+          game.x = game.paddle_x + game.paddle.w_h - game.ball.w_h;
+          game.y = game.height - game.paddle.h - game.ball.h;
         }
-        draw_ascii_ball(ball_x, ball_y);
+        drawAsciiBall(game.x, game.y);
         if (game.right_down) {
           if (game.paddle_x + game.paddle.w < game.width) {
+            game.l_paddle_x = game.paddle_x;
             game.paddle_x += Math.floor(5 + game.right_acc);
             game.right_acc += cfg.acc_rate;
           }
@@ -347,15 +492,45 @@
             game.left_acc += cfg.acc_rate;
           }
         }
-        draw_paddle(game.paddle_x);
-        if (game.x + game.ball.w > game.width || game.x < 0) {
+        drawPaddle(game.paddle_x);
+        if (game.x + game.ball.w > game.width) {
+          if (!game.ball_spin || sign(game.dy) === sign(game.ball_spin)) {
+            game.dy = inc_w_limit(game.dy, -game.ball_spin * 2, game.max_dy, -game.max_dy);
+            game.ball_spin = inc_w_limit(game.ball_spin, -game.dy, game.ball_max_spin, -game.ball_max_spin);
+          }
+          game.dx = -game.dx;
+        }
+        if (game.x < 0) {
+          if (!game.ball_spin || sign(game.dy) !== sign(game.ball_spin)) {
+            game.dy = inc_w_limit(game.dy, game.ball_spin * 2, game.max_dy, -game.max_dy);
+            game.ball_spin = inc_w_limit(game.ball_spin, game.dy, game.ball_max_spin, -game.ball_max_spin);
+          }
           game.dx = -game.dx;
         }
         if (game.y < 0) {
+          if (!game.ball_spin || sign(game.dx) === sign(game.ball_spin)) {
+            game.dx = inc_w_limit(game.dx, -game.ball_spin * 2, game.max_dx, -game.max_dx);
+            game.ball_spin = inc_w_limit(game.ball_spin, -game.dx, game.ball_max_spin, -game.ball_max_spin);
+          }
           game.dy = -game.dy;
         } else if (game.y + game.ball.h > (game.height - game.paddle.h)) {
           if (game.x + game.ball.w > game.paddle_x && game.x < (game.paddle_x + game.paddle.w)) {
+            if (!game.ball_spin || sign(game.dx) !== sign(game.ball_spin)) {
+              game.dx = inc_w_limit(game.dx, game.ball_spin * 2, game.max_dx, -game.max_dx);
+              game.ball_spin = inc_w_limit(game.ball_spin, game.dx, game.ball_max_spin, -game.ball_max_spin);
+            }
+            game.dx = inc_w_limit(game.dx, -game.paddle_dir * 2, game.max_dx, -game.max_dx);
+            game.ball_spin = inc_w_limit(game.ball_spin, -game.paddle_dir, game.ball_max_spin, -game.ball_max_spin);
+            if (game.x + game.ball.w < game.paddle_x + game.char_width) {
+              game.dx = -game.max_dx;
+              game.ball_spin = -game.ball_max_spin;
+            }
+            if (game.x > game.paddle_x + game.paddle.w - game.char_width) {
+              game.dx = game.max_dx;
+              game.ball_spin = game.ball_max_spin;
+            }
             game.dy = -game.dy;
+            game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy));
           } else {
             if (game.state === "running") {
               showOver();
@@ -364,36 +539,40 @@
           }
         }
         if (!game.ball_locked) {
+          game.l_x = game.x;
+          game.l_y = game.y;
           game.x += game.dx;
           game.y += game.dy;
         }
       }
+      game.loop_cnt += 1;
     };
     cfg_defaults = {
       font_name: "'Courier New', Monospace",
-      default_str: "ascii breakout!!",
+      default_str: "ascii breakout!!!",
       default_font: "standard",
       acc_rate: .5
     };
     game_defaults = {
       dx: 4,
       dy: -8,
-      x: 150,
-      y: 150,
+      max_dx: 10,
+      max_dy: 12,
+      x: -1000,
+      y: -1000,
+      l_x: -1,
+      l_x: -1,
       right_down: false,
       left_down: false,
       right_acc: 0,
       left_acc: 0,
       state: "splash",
       paddle_color: "#c84848",
-      disp_data: [],
       board_disp: [],
-      word_boundaries: [],
       space_width: 0,
-      line_breaks: [],
       ball: {
-        'cols': 3,
-        'rows': 2,
+        'cols': 16,
+        'rows': 8,
         'w': 0,
         'h': 0
       },
@@ -407,34 +586,66 @@
       height: 0,
       mouse_min_x: 0,
       mouse_max_x: 0,
-      aoa: 0,
       ascii_colors: ['#c84848', '#c66c3a', '#b47a30', '#a2a22a', '#48a048', '#4248c8'],
       figlet_font: "standard",
-      font_size: 20,
-      ball_locked: true
+      font_size: 14,
+      ball_locked: true,
+      ball_spin: 0,
+      ball_angle: 0,
+      l_ball_angle: 0,
+      ball_da: Math.PI / 16,
+      ball_spin_speed: 2,
+      ball_max_spin: 1,
+      loop_cnt: 0,
+      block_rotations: [],
+      fall_interval: 400,
+      fall_speed: function() {
+        return Math.floor(Math.random() * 10 + 3);
+      },
+      bonuses: [],
+      paddle_x: void 0,
+      paddle_dir: 0,
+      m_timeout: null
     };
-    update_board_cfg = function() {
-      $("#canvas")[0].width = Math.floor($(window).width());
-      $("#canvas")[0].height = Math.floor($(window).height());
-      game.width = $("#canvas").width();
-      game.height = $("#canvas").height();
-      game.mouse_min_x = $("#canvas").offset().left;
+    updateBoardCfg = function() {
+      $("#game-canvas")[0].width = 800;
+      $("#game-canvas")[0].height = 600;
+      game.width = $("#game-canvas").width();
+      game.width_h = Math.ceil(game.width / 2);
+      game.height = $("#game-canvas").height();
+      game.height_h = Math.ceil(game.height / 2);
+      $("#brick-canvas")[0].width = game.width;
+      $("#brick-canvas")[0].height = game.height;
+      game.mouse_min_x = $("#game-canvas").offset().left;
       game.mouse_max_x = game.mouse_min_x + game.width - game.paddle.w;
       ctx.textBaseline = "top";
+      ctx_g.textBaseline = "top";
       ctx.font = "" + game.font_size + "px " + cfg.font_name;
+      ctx_g.font = "" + game.font_size + "px " + cfg.font_name;
       game.char_width = Math.round(ctx.measureText(".").width);
+      game.char_width_h = Math.round(game.char_width / 2);
+      game.font_size_h = Math.round(game.font_size / 2);
       game.ball.w = game.ball.cols * game.char_width;
+      game.ball.w_h = Math.round(game.ball.w / 2);
       game.ball.h = game.ball.rows * game.font_size;
+      game.ball.h_h = Math.round(game.ball.h / 2);
       game.paddle.w = game.paddle.cols * game.char_width;
-      return game.paddle.h = game.paddle.rows * game.font_size;
+      game.paddle.w_h = Math.round(game.paddle.w / 2);
+      game.paddle.h = game.paddle.rows * game.font_size;
+      game.paddle.h_h = Math.round(game.paddle.h / 2);
+      if (!game.paddle_x) {
+        game.l_paddle_x = game.paddle_x;
+        return game.paddle_x = game.width_h - game.paddle.w_h;
+      }
     };
     $(window).resize(function() {
-      return update_board_cfg();
+      return updateBoardCfg();
     });
-    ctx = $("#canvas")[0].getContext("2d");
-    game = $.extend({}, game_defaults);
-    cfg = $.extend({}, cfg_defaults);
-    update_board_cfg();
+    ctx_g = $("#game-canvas")[0].getContext("2d");
+    ctx = $("#brick-canvas")[0].getContext("2d");
+    game = $.extend(true, {}, game_defaults);
+    cfg = $.extend(true, {}, cfg_defaults);
+    updateBoardCfg();
     routie(':str?/:font?/:size?', function(str, font, font_size) {
       var animFrame, canvas, decoded, recursiveAnim;
       if (str) {
@@ -446,24 +657,24 @@
             game.font_size = +decodeURI(font_size);
           }
         }
-        gen_disp_data(decoded);
+        genDispData(decoded);
         showRunning();
       } else {
         $('input[name=str]').val(cfg.default_str);
         game.figlet_font = cfg.default_font;
-        gen_disp_data(cfg.default_str);
+        genDispData(cfg.default_str);
         showSplash();
       }
       animFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || null;
       if (animFrame !== null) {
-        canvas = $("#canvas").get(0);
+        canvas = $("#game-canvas").get(0);
         recursiveAnim = function() {
-          game_loop();
+          gameLoop();
           return animFrame(recursiveAnim, canvas);
         };
         return animFrame(recursiveAnim, canvas);
       } else {
-        return setInterval(game_loop, 1000.0 / 60);
+        return setInterval(gameLoop, 1000.0 / 60);
       }
     });
   });
