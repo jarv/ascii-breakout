@@ -10,4 +10,5 @@ github:
 
 wcoffee:
 	coffee -o static/js -cw coffee/
-	
+wsass:
+	sass --watch sass:static/css

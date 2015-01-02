@@ -1,0 +1,173 @@
+@import 'bourbon/bourbon';
+@import 'base/base';
+
+$terminal-green: #00ff00;
+$radio-checked-bg: yellow;
+$title-color: $terminal-green;
+$title-outline: yellow;
+$actions-color: $terminal-green;
+$button-color: yellow;
+$button-bg: red;
+
+$body-background: gray;
+
+
+$input-color: gray;
+$input-bg: white;
+$input-font: "pressStart";
+$input-font-size: 12px;
+
+
+@font-face {
+    font-family: "pressStart";
+    src: url("fonts/PressStart2P-Regular.ttf");
+}
+@font-face {
+    font-family: "vador";
+    src: url("fonts/vador.ttf");
+}
+
+body {
+    margin: 0px;
+    background-color: darken(gray, 40);
+    z-index: -500;
+    font-family: "pressStart";
+}
+
+
+.content {
+
+  width: 800px;
+  margin: 0px auto;
+  background-color: blue;
+  position: relative;
+  z-index: 200;
+  margin-top: 5%;
+  padding-top: 5%;
+
+  .canvas {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+  }
+
+  #brick-canvas {
+    z-index: -300;
+    @include linear-gradient(shade(blue, 90%), black);
+    border: 3px solid gray;
+  }
+  #game-canvas {
+    z-index: -200;
+  }
+
+  .splash {
+    margin: 0px auto; 
+    font-family: "pressStart";
+    z-index: 800;
+    width: 60%;
+    text-align: center;
+    background-color: #8B0000;
+    opacity: .8;
+    border: 2px solid #336a33;
+    padding: 10px;
+    text-shadow: -1px 0 #336a33, 0 1px #336a33, 1px 0 #336a33, 0 -1px #336a33;
+    display: none;
+    font-family: "vador";
+
+    .actions {
+        display: none;
+        color: $actions-color;
+    }
+    .title {
+        font-size: 3em;
+        font-weight: bold;
+        color: $title-color;
+        text-shadow: -1px 0 rgb(233, 135, 0), 0 1px rgb(233, 135, 0), 1px 0 rgb(233, 135, 0), 0 -1px rgb(233, 135, 0);
+    }
+    input[name="str"] {
+      border-radius: 5px;
+      background-color: $input-bg;
+      color: $input-color;
+      width: 60%;
+      display: inline-block;
+      font-family: $input-font;
+      font-sizE: $input-font-size;
+        
+    }
+    input[type="range"] {
+      display: block;
+      width: 50%;
+      margin: 0px auto;
+    }
+    button {
+      width: 100px;
+      color: $button-color;
+      background-color: $button-bg;
+    }
+
+    li.share-link {
+        text-shadow: none;
+    } 
+
+
+    // ***** start font selection
+    
+    div.select-box {
+      overflow: visible;
+      text-align: center;
+      font-size: 14px;
+      font-weight: normal;
+      text-shadow: none;
+      color: black;
+      display: inline-block;
+      padding: 10px;
+      width: 80%;
+      height: 200px;
+      overflow-y: scroll;
+      overflow-x: visible;
+
+      .select-wrap {
+        position: relative;
+        display: inline-block;
+        overflow: visible;
+        z-index: 1;
+        height: 20px;
+        width: 70px;
+
+        input[type="radio"] {
+            display: none;
+        }
+
+        input[type=radio] + label {
+            position: absolute;
+            display:inline-block;
+            background-color: white;
+            cursor: pointer;
+            height: 20px;
+            width: 70px;
+            top: 0px;
+            right: 0px;
+            overflow: hidden;
+        }
+
+        input[type=radio]:checked + label { 
+            background-color: $radio-checked-bg;
+            color: white;
+        }
+
+      }
+
+      .select-wrap:hover {
+          z-index: 2;
+      }
+
+
+    }
+
+  }
+
+
+
+}
+
+
