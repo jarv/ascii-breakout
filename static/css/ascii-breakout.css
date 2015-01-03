@@ -233,6 +233,9 @@ body {
   z-index: -500;
   font-family: "pressStart"; }
 
+input[type="submit"], input[type="text"] {
+  line-height: normal !important; }
+
 .content {
   width: 800px;
   margin: 0px auto;
@@ -250,7 +253,7 @@ body {
     background-color: #000019;
     background-image: -webkit-linear-gradient(#000019, black);
     background-image: linear-gradient(#000019, black);
-    border: 3px solid gray; }
+    border: 1px solid; }
   .content #game-canvas {
     z-index: -200; }
   .content .splash {
@@ -259,9 +262,8 @@ body {
     z-index: 800;
     width: 60%;
     text-align: center;
-    background-color: #8B0000;
+    background-color: #4248c8;
     opacity: .8;
-    border: 2px solid #336a33;
     padding: 10px;
     text-shadow: -1px 0 #336a33, 0 1px #336a33, 1px 0 #336a33, 0 -1px #336a33;
     display: none;
@@ -273,59 +275,85 @@ body {
       font-size: 3em;
       font-weight: bold;
       color: lime;
-      text-shadow: -1px 0 #e98700, 0 1px #e98700, 1px 0 #e98700, 0 -1px #e98700; }
+      text-shadow: 4px 4px black; }
     .content .splash input[name="str"] {
-      border-radius: 5px;
+      border-radius: 0px;
       background-color: white;
       color: gray;
       width: 60%;
+      height: 30px;
       display: inline-block;
       font-family: "pressStart";
-      font-sizE: 12px; }
+      font-size: 12px;
+      border: 0; }
     .content .splash input[type="range"] {
       display: block;
       width: 50%;
       margin: 0px auto; }
     .content .splash button {
-      width: 100px;
-      color: yellow;
-      background-color: red; }
-    .content .splash li.share-link {
-      text-shadow: none; }
-    .content .splash div.select-box {
-      overflow: visible;
+      margin: 0px;
+      vertical-align: top;
       text-align: center;
-      font-size: 14px;
-      font-weight: normal;
-      text-shadow: none;
-      color: black;
+      width: 80px;
       display: inline-block;
-      padding: 10px;
-      width: 80%;
-      height: 200px;
-      overflow-y: scroll;
-      overflow-x: visible; }
-      .content .splash div.select-box .select-wrap {
-        position: relative;
-        display: inline-block;
-        overflow: visible;
-        z-index: 1;
-        height: 20px;
-        width: 70px; }
-        .content .splash div.select-box .select-wrap input[type="radio"] {
-          display: none; }
-        .content .splash div.select-box .select-wrap input[type=radio] + label {
-          position: absolute;
-          display: inline-block;
-          background-color: white;
-          cursor: pointer;
-          height: 20px;
-          width: 70px;
-          top: 0px;
-          right: 0px;
-          overflow: hidden; }
-        .content .splash div.select-box .select-wrap input[type=radio]:checked + label {
-          background-color: yellow;
-          color: white; }
-      .content .splash div.select-box .select-wrap:hover {
-        z-index: 2; }
+      height: 30px;
+      overflow: hidden;
+      font-family: "pressStart";
+      font-size: 10px;
+      border-radius: 0px;
+      color: lime;
+      background-color: #477dca; }
+    .content .splash button:hover {
+      background-color: #3264ac; }
+    .content .splash li.share-link {
+      display: block;
+      background-color: black;
+      text-shadow: none;
+      padding-top: 4px; }
+      .content .splash li.share-link a {
+        color: yellow; }
+    .content .splash .rangeslider,
+    .content .splash .rangeslider__fill {
+      background: #477dca;
+      display: block;
+      height: 30px;
+      width: 60%;
+      margin: 0px auto;
+      -moz-box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3);
+      -webkit-box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3);
+      box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3); }
+    .content .splash .rangeslider {
+      position: relative; }
+    .content .splash .rangeslider--disabled {
+      filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=40);
+      opacity: 0.4; }
+    .content .splash .rangeslider__fill {
+      background: #6f99d5;
+      position: absolute;
+      top: 0; }
+    .content .splash .rangeslider__handle {
+      background: #009900;
+      cursor: pointer;
+      display: inline-block;
+      width: 40px;
+      height: 30px;
+      position: absolute;
+      top: 0px;
+      outline: 1px solid gray; }
+    .content .splash .rangeslider__handle:after {
+      content: "";
+      display: block;
+      width: 18px;
+      height: 18px;
+      margin: auto;
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0; }
+    .content .splash input[type="range"]:focus + .rangeslider .rangeslider__handle {
+      -moz-box-shadow: 0 0 8px rgba(255, 0, 255, 0.9);
+      -webkit-box-shadow: 0 0 8px rgba(255, 0, 255, 0.9);
+      box-shadow: 0 0 8px rgba(255, 0, 255, 0.9); }
+    .content .splash .rangeslider__handle:hover {
+      background: lime; }

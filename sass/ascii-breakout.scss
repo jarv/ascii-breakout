@@ -6,17 +6,32 @@ $radio-checked-bg: yellow;
 $title-color: $terminal-green;
 $title-outline: yellow;
 $actions-color: $terminal-green;
-$button-color: yellow;
-$button-bg: red;
+
+$bo1: #c84848;
+$bo2: #c66c3a;
+$bo3: #b47a30;
+$bo4: #a2a22a;
+$bo5: #48a048;
+$bo6: #4248c8;
+
+$splash-bg: $bo6;
+
+$button-color: $terminal-green;
+$button-border: 1px solid $bo4;
+$button-bg: #477dca;
+$button-hover-bg: #2c5999;
 
 $body-background: gray;
-
 
 $input-color: gray;
 $input-bg: white;
 $input-font: "pressStart";
 $input-font-size: 12px;
 
+$border-color-splash: gray;
+
+$select-height: 15px;
+$select-width: 50px;
 
 @font-face {
     font-family: "pressStart";
@@ -34,6 +49,9 @@ body {
     font-family: "pressStart";
 }
 
+input[type="submit"], input[type="text"] {
+    line-height:normal !important;
+}
 
 .content {
 
@@ -54,7 +72,7 @@ body {
   #brick-canvas {
     z-index: -300;
     @include linear-gradient(shade(blue, 90%), black);
-    border: 3px solid gray;
+    border: 1px solid ;
   }
   #game-canvas {
     z-index: -200;
@@ -66,9 +84,8 @@ body {
     z-index: 800;
     width: 60%;
     text-align: center;
-    background-color: #8B0000;
+    background-color: $splash-bg;
     opacity: .8;
-    border: 2px solid #336a33;
     padding: 10px;
     text-shadow: -1px 0 #336a33, 0 1px #336a33, 1px 0 #336a33, 0 -1px #336a33;
     display: none;
@@ -82,16 +99,18 @@ body {
         font-size: 3em;
         font-weight: bold;
         color: $title-color;
-        text-shadow: -1px 0 rgb(233, 135, 0), 0 1px rgb(233, 135, 0), 1px 0 rgb(233, 135, 0), 0 -1px rgb(233, 135, 0);
+        text-shadow: 4px 4px black;
     }
     input[name="str"] {
-      border-radius: 5px;
+      border-radius: 0px;
       background-color: $input-bg;
       color: $input-color;
       width: 60%;
+      height: 30px;
       display: inline-block;
       font-family: $input-font;
-      font-sizE: $input-font-size;
+      font-size: $input-font-size;
+      border: 0;
         
     }
     input[type="range"] {
@@ -100,74 +119,93 @@ body {
       margin: 0px auto;
     }
     button {
-      width: 100px;
+      margin: 0px;
+      vertical-align: top;
+      text-align: center;
+      width: 80px;
+
+      display: inline-block;
+      height: 30px;
+      overflow: hidden;
+      font-family: "pressStart";
+      font-size: 10px;
+      border-radius: 0px;
       color: $button-color;
       background-color: $button-bg;
     }
-
+    button:hover {
+      background-color: darken($button-bg, 10);
+    }
     li.share-link {
-        text-shadow: none;
+      display: block;
+      background-color: black; 
+      text-shadow: none;
+      padding-top: 4px;
+      a {
+        color: yellow;
+      }
     } 
 
+    .rangeslider,
+    .rangeslider__fill {
+      background: $button-bg;
+      display: block;
+      height: 30px;
+      width: 60%;
+      margin: 0px auto;
+      -moz-box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3);
+      -webkit-box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3);
+      box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3);
+    }
 
-    // ***** start font selection
-    
-    div.select-box {
-      overflow: visible;
-      text-align: center;
-      font-size: 14px;
-      font-weight: normal;
-      text-shadow: none;
-      color: black;
+    .rangeslider {
+      position: relative;
+    }
+
+    .rangeslider--disabled {
+      filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=40);
+      opacity: 0.4;
+    }
+
+    .rangeslider__fill {
+      background: lighten($button-bg, 10);
+      position: absolute;
+      top: 0;
+    }
+
+    .rangeslider__handle {
+      background: darken($terminal-green, 20);
+      cursor: pointer;
       display: inline-block;
-      padding: 10px;
-      width: 80%;
-      height: 200px;
-      overflow-y: scroll;
-      overflow-x: visible;
+      width: 40px;
+      height: 30px;
+      position: absolute;
+      top: 0px;
+      outline: 1px solid gray;
+    }
+    .rangeslider__handle:after {
+      content: "";
+      display: block;
+      width: 18px;
+      height: 18px;
+      margin: auto;
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+    }
 
-      .select-wrap {
-        position: relative;
-        display: inline-block;
-        overflow: visible;
-        z-index: 1;
-        height: 20px;
-        width: 70px;
-
-        input[type="radio"] {
-            display: none;
-        }
-
-        input[type=radio] + label {
-            position: absolute;
-            display:inline-block;
-            background-color: white;
-            cursor: pointer;
-            height: 20px;
-            width: 70px;
-            top: 0px;
-            right: 0px;
-            overflow: hidden;
-        }
-
-        input[type=radio]:checked + label { 
-            background-color: $radio-checked-bg;
-            color: white;
-        }
-
-      }
-
-      .select-wrap:hover {
-          z-index: 2;
-      }
-
-
+    input[type="range"]:focus + .rangeslider .rangeslider__handle {
+      -moz-box-shadow: 0 0 8px rgba(255, 0, 255, 0.9);
+      -webkit-box-shadow: 0 0 8px rgba(255, 0, 255, 0.9);
+      box-shadow: 0 0 8px rgba(255, 0, 255, 0.9);
+    }
+    .rangeslider__handle:hover {
+      background: $terminal-green;
     }
 
   }
-
-
-
 }
 
 

@@ -1,29 +1,9 @@
 $(document).ready(() ->
 
+
+
   sign = (x) -> `x > 0 ? 1 : x < 0 ? -1 : 0`
 
-  $(".select-box label").hover(
-    () ->
-
-      $(this).closest("label").css("z-index", 1)
-      $(this).animate({height: "30", width: "90", left: "-=10", top: "-=5", "padding-top": "+=5", "font-size": "+=0" }, "fast")
-      return
-    () ->
-      $(this).closest("label").css("z-index", 0)
-      $(this).animate({height: "20", width: "70", left: "+=10", top: "+=5","padding-top": "-=5",  "font-size": "-=0" }, "fast")
-      return
-  )
-
-  $("input[name=font]:radio").change(() ->
-    font = $('input[name=font]:checked').val()
-    game.figlet_font = font
-    genDispData($('input[name=str]').val())
-  )
-
-  $("input[type=range]").change(() ->
-    game.font_size = +$("input[type=range]").val()
-    genDispData($('input[name=str]').val())
-  )
   # Game states
   #  - running
   #  - paused
@@ -40,6 +20,7 @@ $(document).ready(() ->
 
   showRunning = () ->
     $(".splash").hide()
+    updateBoardCfg()
     game.state = "running"
 
   showOver = () ->
@@ -153,9 +134,9 @@ $(document).ready(() ->
     ctx_g.save()
     ctx_g.translate(game.l_x + game.ball.w_h, game.l_y + game.ball.h_h)
     ctx_g.rotate(game.l_ball_angle)
-    ctx_g.clearRect(-game.ball.w_h - game.char_w, -game.ball.h_h - game.font_size,
-                    game.ball.w + game.char_w * 3, game.ball.h + game.font_size * 3)
-    # ctx_g.clearRect(-game.ball.w_h, -game.ball.h_h, game.ball.w , game.ball.h )
+    ctx_g.clearRect(
+      -game.ball.w_h - game.char_w, -game.ball.h_h - game.font_size,
+      game.ball.w + game.char_w * 3, game.ball.h + game.font_size * 3)
     ctx_g.restore()
 
     ctx_g.fillStyle = game.paddle_color
@@ -165,6 +146,8 @@ $(document).ready(() ->
 
     for r in [0..(game.ball.rows - 1)]
       row = ("O" for i in [1..game.ball.cols]).join("")
+      if not row or row == undefined
+        alert("undefined!!")
       ctx_g.fillText(row, -game.ball.w_h, -game.ball.h_h + r * game.font_size)
     ctx_g.restore()
 
@@ -175,12 +158,16 @@ $(document).ready(() ->
       # if rotation moves the ball outside of the game
       # perimeter make an adjustment
 
-      c = getBallCorners()
+
+      ul = [game.x, game.y]
+      ur = [game.x + game.ball.w, game.y]
+      lr = [game.x + game.ball.w, game.y + game.ball.h]
+      ll = [game.x, game.y + game.ball.h]
+      c = getRotatedCorners(ul, ur, lr, ll)
       max_y = Math.floor(Math.max.apply(null, (corner[1] for corner in c)))
       min_y = Math.ceil(Math.min.apply(null, (corner[1] for corner in c)))
       max_x = Math.ceil(Math.max.apply(null, (corner[0] for corner in c)))
       min_x = Math.floor(Math.min.apply(null, (corner[0] for corner in c)))
-
       if min_x < 0
         game.x -= min_x
       if max_x > game.w
@@ -207,7 +194,9 @@ $(document).ready(() ->
     return
 
   Figlet.loadFont = (name, fn) ->
-    url = "fonts/#{name}.flf" # load from github - "https://api.github.com/repos/jarv/ascii-breakout/contents/fonts/#{name}.flf"
+    url = "fonts/#{name}.flf" # load from github
+                              # https://api.github.com/repos/jarv/
+                              # ascii-breakout/contents/fonts/#{name}.flf"
     $.ajax({
       url: url,
       datatype: "text", # load from github - "jsonp",
@@ -215,13 +204,13 @@ $(document).ready(() ->
     })
 
   genDispData = (str) ->
-    Figlet.parsePhrase(str, game.figlet_font, (disp_data, word_boundaries, space_width) ->
-      game.space_width = space_width
+    Figlet.parsePhrase(str, game.figlet_font, (disp_data, word_boundaries, space_w) ->
+      game.space_w = space_w
       line_breaks = createLineBreaks(disp_data, word_boundaries)
-      game.board_disp = createBoardDisp(disp_data, line_breaks, word_boundaries, space_width)
-      encoded_str = encodeURI(str)
-      encoded_font = encodeURI(game.figlet_font)
-      encoded_font_size = encodeURI(game.font_size)
+      game.board_disp = createBoardDisp(disp_data, line_breaks, word_boundaries, space_w)
+      encoded_str = encodeURIComponent(str)
+      encoded_font = encodeURIComponent(game.figlet_font)
+      encoded_font_size = encodeURIComponent(game.font_size)
       if str.length > 0
         $(".share-link").html("""<a href="##{encoded_str}/#{encoded_font}/#{encoded_font_size}">Use this link to share this game with a friend!</a>""")
       else
@@ -263,30 +252,31 @@ $(document).ready(() ->
 
     return line_breaks
 
+
   pointInBrick = (x, y, brick_x, brick_y) ->
     # check if a point is inside a brick
-    # true - point is in the brick
-    # false - it isn't
     if ((x  > brick_x + game.char_w) \
-        or (x + game.char_w < brick_x) \
+        or (x < brick_x) \
         or (y  > brick_y + game.font_size) \
-        or (y + game.font_size< brick_y))
+        or (y < brick_y))
       return false
     return true
+
 
   checkBallCollision = (brick_x, brick_y) ->
     xpos = game.x
     ypos = game.y
     for row in [1..game.ball.rows]
       for col in [1..game.ball.cols]
-        r = getRotatedPoint(game.x + game.ball.w_h,
-                            game.y + game.ball.h_h,
-                            xpos + game.dx,
-                            ypos + game.dy,
-                            game.ball_angle)
-        if pointInBrick(r[0], r[1], brick_x, brick_y)
-          return [r[0], r[1], col, row]
 
+        ul = [xpos, ypos]
+        ur = [xpos + game.char_w, ypos]
+        lr = [xpos + game.char_w, ypos + game.font_size]
+        ll = [xpos, ypos + game.font_size]
+        c = getRotatedCorners(ul, ur, lr, ll)
+        for corner in c
+          if pointInBrick(corner[0] + game.dx, corner[1] + game.dy, brick_x, brick_y)
+            return [corner[0], corner[1]]
         xpos += game.char_w
       ypos += game.font_size
     return false
@@ -298,7 +288,6 @@ $(document).ready(() ->
     c = checkBallCollision(brick_x, brick_y)
     if not c
       return false
-
     # center brick
     c_brick_x = brick_x + game.char_w_h
     c_brick_y = brick_y + game.font_size_h
@@ -332,11 +321,9 @@ $(document).ready(() ->
         if (game.dy <= 0)
           game.dy = -game.dy
 
-    ctx.clearRect(0, brick_y - game.font_size, game.w, game.font_size * 3)
-    # ctx.clearRect(brick_x - game.char_w, brick_y - game.font_size, game.w * 3, game.font_size * 3)
     return true
 
-  createBoardDisp = (disp_data, line_breaks, word_boundaries, space_width) ->
+  createBoardDisp = (disp_data, line_breaks, word_boundaries, space_w) ->
     board_disp = []
     line_cnt = 0
     last_break = 0
@@ -344,7 +331,7 @@ $(document).ready(() ->
     for break_pos in line_breaks
       for row, row_index in disp_data
         if break_pos in word_boundaries and last_break != 0
-          space_offset = space_width
+          space_offset = space_w
         sliced_row = row.slice(last_break + space_offset, break_pos)
         board_disp[row_index + (line_cnt * disp_data.length)] = sliced_row
       last_break = break_pos
@@ -356,12 +343,15 @@ $(document).ready(() ->
     ypos = 0
     has_won = true
     for row, row_index in game.board_disp
-      xpos = game.w_h -  row.length * game.char_w_h
+      xpos = game.w_h - Math.round(row.length * game.char_w / 2)
       for column, column_index in row
         if column != " "
           has_won = false
           if checkCollision(xpos, ypos)
             game.board_disp[row_index][column_index] = " "
+            ctx.clearRect(xpos, ypos, game.char_w, game.font_size)
+            # ctx.clearRect(0, 0, game.w, game.h)
+            # dispBoard()
 
         xpos += game.char_w
       ypos += game.font_size
@@ -403,9 +393,8 @@ $(document).ready(() ->
     game.bonuses.push(bonus)
     updateBoardCfg()
 
-  fallingBlocks = (l_char_row_index) ->
+  fallingBlocks = () ->
 
-    # Display falling blocks
     clearFallingBlock = (ypos, angle) ->
       ctx.save()
       ctx.translate(r.x + game.char_w_h, ypos + game.font_size_h)
@@ -415,6 +404,7 @@ $(document).ready(() ->
                     game.char_w * 3, game.font_size * 3)
       ctx.restore()
 
+    # Display falling blocks
 
     for r in game.block_rotations.filter((elem) -> return elem.d == true)
       if (r.y + game.font_size > game.h - game.paddle.h) and
@@ -448,20 +438,19 @@ $(document).ready(() ->
 
     if game.state == "running"
 
-      if game.loop_cnt % game.fall_interval == 0 and game.board_disp[l_char_row_index]
+      if game.loop_cnt % game.fall_interval == 0 and game.board_disp[game.l_char_row_index]
         non_spaces = []
-        last_row = game.board_disp[l_char_row_index]
+        last_row = game.board_disp[game.l_char_row_index]
         for value, index in last_row
           if value != " "
             non_spaces.push(index)
-
         # random character in the last non-space row
         row_index = non_spaces[Math.floor(Math.random() * non_spaces.length)]
-        # add the character to the block rotations
-        xpos = game.w_h - last_row.length * game.char_w_h
+        xpos = game.w_h - Math.round(last_row.length * game.char_w / 2)
+
         game.block_rotations.push({
           x: xpos + game.char_w * row_index
-          y: l_char_row_index * game.font_size + game.font_size
+          y: game.l_char_row_index * game.font_size + game.font_size
           l_y: null
           # rotation
           l_r: null
@@ -484,26 +473,19 @@ $(document).ready(() ->
   dispBoard = () ->
     ypos = 0
     # track the last row contains some characters
-    l_char_row_index = 0
 
     for row, row_index in game.board_disp
       xpos = game.w_h - Math.round(row.length * game.char_w / 2)
       text_color = getColor(row_index)
       if row.some((elem) -> return elem != " ")
-        l_char_row_index = row_index
+        game.l_char_row_index = row_index
 
       ctx.fillStyle = text_color
       ctx.fillText(row.join(""), xpos, ypos)
       ypos += game.font_size
 
-    fallingBlocks(l_char_row_index)
 
-  getRotatedPoint = (r_x, r_y, x, y, angle) ->
-    [r_x + (x - r_x) * Math.cos(angle) + (y - r_y) * Math.sin(angle),
-     r_y - (x - r_x) * Math.sin(angle) + (y - r_y) * Math.cos(angle)]
-
-
-  getBallCorners = () ->
+  getRotatedCorners = (ul, ur, lr, ll) ->
 
     # ul = upper left
     # ur = upper right
@@ -516,18 +498,13 @@ $(document).ready(() ->
     # ll ----- lr
     #
 
-    ul = [game.x, game.y]
-    ur = [game.x + game.ball.w, game.y]
-    lr = [game.x + game.ball.w, game.y + game.ball.h]
-    ll = [game.x, game.y + game.ball.h]
-
     # if the angle is a multiple of pi we don't need to worry about
     # compensating for rotation
     if Math.round(100 * game.ball_angle) % Math.round(100 * Math.PI) == 0
       return [ul, ur, lr, ll]
     else
-      r_x = ul[0] + game.ball.w_h
-      r_y = ul[1] + game.ball.h_h
+      r_x = game.x + game.ball.w_h
+      r_y = game.y + game.ball.h_h
       ball_cos = Math.cos(game.ball_angle)
       ball_sin = Math.sin(game.ball_angle)
       return [
@@ -544,7 +521,11 @@ $(document).ready(() ->
 
 
   getBallHeight = () ->
-    c = getBallCorners()
+    ul = [game.x, game.y]
+    ur = [game.x + game.ball.w, game.y]
+    lr = [game.x + game.ball.w, game.y + game.ball.h]
+    ll = [game.x, game.y + game.ball.h]
+    c = getRotatedCorners(ul, ur, lr, ll)
     return Math.max.apply(null, (corner[1] for corner in c)) - Math.min.apply(null, (corner[1] for corner in c))
 
   gameLoop = () ->
@@ -558,7 +539,6 @@ $(document).ready(() ->
 
     if game.state == "running"
       won = processBoardDisp()
-      dispBoard()
 
       if won and game.board_disp.length > 0
         showWin()
@@ -573,6 +553,10 @@ $(document).ready(() ->
         game.x = game.paddle_x + game.paddle.w_h - game.ball.w_h
         game.y = game.h - game.paddle.h - game.ball.h - (getBallHeight() / 2 - game.ball.h_h)
 
+      if game.l_char_row_index != 0 and not game.ball_locked
+        fallingBlocks()
+
+
       drawAsciiBall(game.x, game.y)
 
       if game.right_down
@@ -586,7 +570,11 @@ $(document).ready(() ->
           game.left_acc += cfg.acc_rate
       drawPaddle(game.paddle_x)
 
-      c = getBallCorners()
+      ul = [game.x, game.y]
+      ur = [game.x + game.ball.w, game.y]
+      lr = [game.x + game.ball.w, game.y + game.ball.h]
+      ll = [game.x, game.y + game.ball.h]
+      c = getRotatedCorners(ul, ur, lr, ll)
       max_y = Math.floor(Math.max.apply(null, (corner[1] for corner in c)))
       min_y = Math.ceil(Math.min.apply(null, (corner[1] for corner in c)))
       max_x = Math.ceil(Math.max.apply(null, (corner[0] for corner in c)))
@@ -600,7 +588,7 @@ $(document).ready(() ->
           game.dy = inc_w_limit(game.dy, -game.ball_spin * 2, game.max_dy, -game.max_dy)
           game.ball_spin = inc_w_limit(game.ball_spin, -game.dy, game.ball_max_spin, -game.ball_max_spin)
         game.dx = -game.dx
-      if (min_x - game.dy < 0)
+      if (min_x + game.dx < 0)
         # if the ball is not spinning or if it is spinning in the opposite
         # direction from its motion then slow down the spin and the speed
         if not game.ball_spin or sign(game.dy) != sign(game.ball_spin)
@@ -648,8 +636,6 @@ $(document).ready(() ->
         game.l_y = game.y
         game.x += game.dx
         game.y += game.dy
-    else
-      dispBoard()
     game.loop_cnt += 1
     return
 
@@ -661,14 +647,14 @@ $(document).ready(() ->
     default_str: "as"
     default_font: "standard"
     acc_rate: .5
-    max_width: 800
-    max_height: 600
+    max_w: 800
+    max_h: 600
 
   }
 
   game_defaults = {
     # initial speed
-    dx: 0
+    dx: -10
     dy: -8
     # Max dx for when the ball
     # hits a moving paddle
@@ -678,7 +664,6 @@ $(document).ready(() ->
     x: -1000
     y: -1000
     # last position
-    l_x: -1
     l_x: -1
     right_down: false
     left_down: false
@@ -694,7 +679,7 @@ $(document).ready(() ->
 
     # with of a space character, also
     # needed for word wrapping
-    space_width: 0
+    space_w: 0
 
     # ball
     # Small  O
@@ -718,25 +703,27 @@ $(document).ready(() ->
     mouse_max_x: 0
 
 
-    ascii_colors: ['#c84848', '#c66c3a', '#b47a30', '#a2a22a', '#48a048', '#4248c8']
+    ascii_colors: ['#c84848', '#c66c3a', '#b47a30', '#a2a22a', '#48a048'] # , '#4248c8']
     figlet_font: "standard"
 
-    font_size: 12
+    font_size: 9
     # ball locked on paddle
     ball_locked: true
     # what direction the ball is spinning
     # and its current angle
-    ball_spin: 1
+    ball_spin: 2
     ball_angle: Math.PI / 2
     l_ball_angle: Math.PI / 2
     ball_da: Math.PI / 16
     ball_spin_speed: 2
     ball_max_spin: 1
 
+    # last row that contains blocks
+    l_char_row_index: 0
     # periodic rotations
     loop_cnt: 0
     block_rotations: []
-    fall_interval: 400
+    fall_interval: 300
     fall_speed: () -> Math.floor(Math.random() * 10 + 3)
 
     # bonus items
@@ -752,10 +739,11 @@ $(document).ready(() ->
   }
 
   updateBoardCfg  = () ->
+    ctx.clearRect(0, 0, game.w, game.h)
     #$("#game-canvas")[0].width = Math.floor($(window).width())
     #$("#game-canvas")[0].height = Math.floor($(window).height())
-    $("#game-canvas")[0].width = cfg.max_width
-    $("#game-canvas")[0].height = cfg.max_height
+    $("#game-canvas")[0].width = cfg.max_w
+    $("#game-canvas")[0].height = cfg.max_h
     game.w =  $("#game-canvas").width()
     game.w_h = Math.ceil(game.w / 2)
     game.h = $("#game-canvas").height()
@@ -772,7 +760,7 @@ $(document).ready(() ->
     ctx_g.textBaseline = "top"
     ctx.font = "#{game.font_size}px #{cfg.font_name}"
     ctx_g.font = "#{game.font_size}px #{cfg.font_name}"
-    game.char_w = ctx.measureText("|").width
+    game.char_w = ctx.measureText("]").width
     game.char_w_h = Math.round(game.char_w / 2)
     game.font_size_h = Math.round(game.font_size / 2)
     game.ball.w = game.ball.cols * game.char_w
@@ -786,7 +774,7 @@ $(document).ready(() ->
     if not game.paddle_x
       game.l_paddle_x = game.paddle_x
       game.paddle_x = game.w_h - game.paddle.w_h
-
+    dispBoard()
 
   ctx_g = $("#game-canvas")[0].getContext("2d")
   ctx = $("#brick-canvas")[0].getContext("2d")
@@ -801,14 +789,43 @@ $(document).ready(() ->
   cfg = $.extend(true, {}, cfg_defaults)
   updateBoardCfg()
 
+  # slider for font names
+  $.ajax({
+    url: '/fonts.json',
+    datatype: "json",
+    success: (data) ->
+      $("#font-name").attr("range", 1)
+      $("#font-name").attr("min", 1)
+      $("#font-name").attr("max", data.length)
+      $("#font-name").attr("value", data.indexOf(game_defaults.figlet_font) + 1)
+      $("#font-name").rangeslider({
+        polyfill: false,
+        onSlide: (p, v) ->
+          if v
+            game.figlet_font = data[v - 1]
+            genDispData($('input[name=str]').val())
+      })
+
+  })
+
+  # slider for font size
+  $("#font-size").rangeslider({
+    polyfill: false,
+    onSlide: (p, v) ->
+      if v
+        game.font_size = +v
+        genDispData($('input[name=str]').val())
+  })
+
+
   routie(':str?/:font?/:size?', (str, font, font_size) ->
     if str
-      decoded = decodeURI(str)
+      decoded = decodeURIComponent(str)
       $('input[name=str]').val(decoded)
       if font
-        game.figlet_font = decodeURI(font)
+        game.figlet_font = decodeURIComponent(font)
         if font_size
-          game.font_size = +decodeURI(font_size)
+          game.font_size = +decodeURIComponent(font_size)
 
       genDispData(decoded)
       showRunning()

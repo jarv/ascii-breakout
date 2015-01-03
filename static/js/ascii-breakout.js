@@ -3,41 +3,10 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(document).ready(function() {
-    var cfg, cfg_defaults, checkBallCollision, checkCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallCorners, getBallHeight, getColor, getRotatedPoint, inc_w_limit, pointInBrick, processBoardDisp, showOver, showPaused, showRunning, showSplash, showWin, sign, updateBoardCfg;
+    var cfg, cfg_defaults, checkBallCollision, checkCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallHeight, getColor, getRotatedCorners, inc_w_limit, pointInBrick, processBoardDisp, showOver, showPaused, showRunning, showSplash, showWin, sign, updateBoardCfg;
     sign = function(x) {
       return x > 0 ? 1 : x < 0 ? -1 : 0;
     };
-    $(".select-box label").hover(function() {
-      $(this).closest("label").css("z-index", 1);
-      $(this).animate({
-        height: "30",
-        width: "90",
-        left: "-=10",
-        top: "-=5",
-        "padding-top": "+=5",
-        "font-size": "+=0"
-      }, "fast");
-    }, function() {
-      $(this).closest("label").css("z-index", 0);
-      $(this).animate({
-        height: "20",
-        width: "70",
-        left: "+=10",
-        top: "+=5",
-        "padding-top": "-=5",
-        "font-size": "-=0"
-      }, "fast");
-    });
-    $("input[name=font]:radio").change(function() {
-      var font;
-      font = $('input[name=font]:checked').val();
-      game.figlet_font = font;
-      return genDispData($('input[name=str]').val());
-    });
-    $("input[type=range]").change(function() {
-      game.font_size = +$("input[type=range]").val();
-      return genDispData($('input[name=str]').val());
-    });
     showWin = function() {
       game.state = "win";
       $(".title").html("Hey, looks like you won. Congratulations!");
@@ -47,6 +16,7 @@
     };
     showRunning = function() {
       $(".splash").hide();
+      updateBoardCfg();
       return game.state = "running";
     };
     showOver = function() {
@@ -154,7 +124,7 @@
       e.preventDefault();
     });
     drawAsciiBall = function(x, y) {
-      var c, corner, i, max_x, max_y, min_x, min_y, r, row, _i, _ref;
+      var c, corner, i, ll, lr, max_x, max_y, min_x, min_y, r, row, ul, ur, _i, _ref;
       ctx_g.save();
       ctx_g.translate(game.l_x + game.ball.w_h, game.l_y + game.ball.h_h);
       ctx_g.rotate(game.l_ball_angle);
@@ -173,13 +143,20 @@
           }
           return _results;
         })()).join("");
+        if (!row || row === void 0) {
+          alert("undefined!!");
+        }
         ctx_g.fillText(row, -game.ball.w_h, -game.ball.h_h + r * game.font_size);
       }
       ctx_g.restore();
       if (game.loop_cnt % game.ball_spin_speed === 0) {
         game.l_ball_angle = game.ball_angle;
         game.ball_angle += game.ball_spin * game.ball_da;
-        c = getBallCorners();
+        ul = [game.x, game.y];
+        ur = [game.x + game.ball.w, game.y];
+        lr = [game.x + game.ball.w, game.y + game.ball.h];
+        ll = [game.x, game.y + game.ball.h];
+        c = getRotatedCorners(ul, ur, lr, ll);
         max_y = Math.floor(Math.max.apply(null, (function() {
           var _j, _len, _results;
           _results = [];
@@ -261,14 +238,14 @@
       });
     };
     genDispData = function(str) {
-      Figlet.parsePhrase(str, game.figlet_font, function(disp_data, word_boundaries, space_width) {
+      Figlet.parsePhrase(str, game.figlet_font, function(disp_data, word_boundaries, space_w) {
         var encoded_font, encoded_font_size, encoded_str, line_breaks;
-        game.space_width = space_width;
+        game.space_w = space_w;
         line_breaks = createLineBreaks(disp_data, word_boundaries);
-        game.board_disp = createBoardDisp(disp_data, line_breaks, word_boundaries, space_width);
-        encoded_str = encodeURI(str);
-        encoded_font = encodeURI(game.figlet_font);
-        encoded_font_size = encodeURI(game.font_size);
+        game.board_disp = createBoardDisp(disp_data, line_breaks, word_boundaries, space_w);
+        encoded_str = encodeURIComponent(str);
+        encoded_font = encodeURIComponent(game.figlet_font);
+        encoded_font_size = encodeURIComponent(game.font_size);
         if (str.length > 0) {
           $(".share-link").html("<a href=\"#" + encoded_str + "/" + encoded_font + "/" + encoded_font_size + "\">Use this link to share this game with a friend!</a>");
         } else {
@@ -312,20 +289,27 @@
       return line_breaks;
     };
     pointInBrick = function(x, y, brick_x, brick_y) {
-      if ((x > brick_x + game.char_w) || (x + game.char_w < brick_x) || (y > brick_y + game.font_size) || (y + game.font_size < brick_y)) {
+      if ((x > brick_x + game.char_w) || (x < brick_x) || (y > brick_y + game.font_size) || (y < brick_y)) {
         return false;
       }
       return true;
     };
     checkBallCollision = function(brick_x, brick_y) {
-      var col, r, row, xpos, ypos, _i, _j, _ref, _ref1;
+      var c, col, corner, ll, lr, row, ul, ur, xpos, ypos, _i, _j, _k, _len, _ref, _ref1;
       xpos = game.x;
       ypos = game.y;
       for (row = _i = 1, _ref = game.ball.rows; 1 <= _ref ? _i <= _ref : _i >= _ref; row = 1 <= _ref ? ++_i : --_i) {
         for (col = _j = 1, _ref1 = game.ball.cols; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; col = 1 <= _ref1 ? ++_j : --_j) {
-          r = getRotatedPoint(game.x + game.ball.w_h, game.y + game.ball.h_h, xpos + game.dx, ypos + game.dy, game.ball_angle);
-          if (pointInBrick(r[0], r[1], brick_x, brick_y)) {
-            return [r[0], r[1], col, row];
+          ul = [xpos, ypos];
+          ur = [xpos + game.char_w, ypos];
+          lr = [xpos + game.char_w, ypos + game.font_size];
+          ll = [xpos, ypos + game.font_size];
+          c = getRotatedCorners(ul, ur, lr, ll);
+          for (_k = 0, _len = c.length; _k < _len; _k++) {
+            corner = c[_k];
+            if (pointInBrick(corner[0] + game.dx, corner[1] + game.dy, brick_x, brick_y)) {
+              return [corner[0], corner[1]];
+            }
           }
           xpos += game.char_w;
         }
@@ -363,10 +347,9 @@
             game.dy = -game.dy;
           }
       }
-      ctx.clearRect(0, brick_y - game.font_size, game.w, game.font_size * 3);
       return true;
     };
-    createBoardDisp = function(disp_data, line_breaks, word_boundaries, space_width) {
+    createBoardDisp = function(disp_data, line_breaks, word_boundaries, space_w) {
       var board_disp, break_pos, last_break, line_cnt, row, row_index, sliced_row, space_offset, _i, _j, _len, _len1;
       board_disp = [];
       line_cnt = 0;
@@ -377,7 +360,7 @@
         for (row_index = _j = 0, _len1 = disp_data.length; _j < _len1; row_index = ++_j) {
           row = disp_data[row_index];
           if (__indexOf.call(word_boundaries, break_pos) >= 0 && last_break !== 0) {
-            space_offset = space_width;
+            space_offset = space_w;
           }
           sliced_row = row.slice(last_break + space_offset, break_pos);
           board_disp[row_index + (line_cnt * disp_data.length)] = sliced_row;
@@ -394,13 +377,14 @@
       _ref = game.board_disp;
       for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
         row = _ref[row_index];
-        xpos = game.w_h - row.length * game.char_w_h;
+        xpos = game.w_h - Math.round(row.length * game.char_w / 2);
         for (column_index = _j = 0, _len1 = row.length; _j < _len1; column_index = ++_j) {
           column = row[column_index];
           if (column !== " ") {
             has_won = false;
             if (checkCollision(xpos, ypos)) {
               game.board_disp[row_index][column_index] = " ";
+              ctx.clearRect(xpos, ypos, game.char_w, game.font_size);
             }
           }
           xpos += game.char_w;
@@ -451,7 +435,7 @@
       game.bonuses.push(bonus);
       return updateBoardCfg();
     };
-    fallingBlocks = function(l_char_row_index) {
+    fallingBlocks = function() {
       var clearFallingBlock, index, last_row, non_spaces, r, row_index, value, xpos, _i, _j, _len, _len1, _ref;
       clearFallingBlock = function(ypos, angle) {
         ctx.save();
@@ -495,9 +479,9 @@
         }
       }
       if (game.state === "running") {
-        if (game.loop_cnt % game.fall_interval === 0 && game.board_disp[l_char_row_index]) {
+        if (game.loop_cnt % game.fall_interval === 0 && game.board_disp[game.l_char_row_index]) {
           non_spaces = [];
-          last_row = game.board_disp[l_char_row_index];
+          last_row = game.board_disp[game.l_char_row_index];
           for (index = _j = 0, _len1 = last_row.length; _j < _len1; index = ++_j) {
             value = last_row[index];
             if (value !== " ") {
@@ -505,10 +489,10 @@
             }
           }
           row_index = non_spaces[Math.floor(Math.random() * non_spaces.length)];
-          xpos = game.w_h - last_row.length * game.char_w_h;
+          xpos = game.w_h - Math.round(last_row.length * game.char_w / 2);
           game.block_rotations.push({
             x: xpos + game.char_w * row_index,
-            y: l_char_row_index * game.font_size + game.font_size,
+            y: game.l_char_row_index * game.font_size + game.font_size,
             l_y: null,
             l_r: null,
             r: 0,
@@ -522,10 +506,10 @@
       }
     };
     dispBoard = function() {
-      var l_char_row_index, row, row_index, text_color, xpos, ypos, _i, _len, _ref;
+      var row, row_index, text_color, xpos, ypos, _i, _len, _ref, _results;
       ypos = 0;
-      l_char_row_index = 0;
       _ref = game.board_disp;
+      _results = [];
       for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
         row = _ref[row_index];
         xpos = game.w_h - Math.round(row.length * game.char_w / 2);
@@ -533,36 +517,33 @@
         if (row.some(function(elem) {
           return elem !== " ";
         })) {
-          l_char_row_index = row_index;
+          game.l_char_row_index = row_index;
         }
         ctx.fillStyle = text_color;
         ctx.fillText(row.join(""), xpos, ypos);
-        ypos += game.font_size;
+        _results.push(ypos += game.font_size);
       }
-      return fallingBlocks(l_char_row_index);
+      return _results;
     };
-    getRotatedPoint = function(r_x, r_y, x, y, angle) {
-      return [r_x + (x - r_x) * Math.cos(angle) + (y - r_y) * Math.sin(angle), r_y - (x - r_x) * Math.sin(angle) + (y - r_y) * Math.cos(angle)];
-    };
-    getBallCorners = function() {
-      var ball_cos, ball_sin, ll, lr, r_x, r_y, ul, ur;
-      ul = [game.x, game.y];
-      ur = [game.x + game.ball.w, game.y];
-      lr = [game.x + game.ball.w, game.y + game.ball.h];
-      ll = [game.x, game.y + game.ball.h];
+    getRotatedCorners = function(ul, ur, lr, ll) {
+      var ball_cos, ball_sin, r_x, r_y;
       if (Math.round(100 * game.ball_angle) % Math.round(100 * Math.PI) === 0) {
         return [ul, ur, lr, ll];
       } else {
-        r_x = ul[0] + game.ball.w_h;
-        r_y = ul[1] + game.ball.h_h;
+        r_x = game.x + game.ball.w_h;
+        r_y = game.y + game.ball.h_h;
         ball_cos = Math.cos(game.ball_angle);
         ball_sin = Math.sin(game.ball_angle);
         return [[r_x + (ul[0] - r_x) * ball_cos + (ul[1] - r_y) * ball_sin, r_y - (ul[0] - r_x) * ball_sin + (ul[1] - r_y) * ball_cos], [r_x + (ur[0] - r_x) * ball_cos + (ur[1] - r_y) * ball_sin, r_y - (ur[0] - r_x) * ball_sin + (ur[1] - r_y) * ball_cos], [r_x + (lr[0] - r_x) * ball_cos + (lr[1] - r_y) * ball_sin, r_y - (lr[0] - r_x) * ball_sin + (lr[1] - r_y) * ball_cos], [r_x + (ll[0] - r_x) * ball_cos + (ll[1] - r_y) * ball_sin, r_y - (ll[0] - r_x) * ball_sin + (ll[1] - r_y) * ball_cos]];
       }
     };
     getBallHeight = function() {
-      var c, corner;
-      c = getBallCorners();
+      var c, corner, ll, lr, ul, ur;
+      ul = [game.x, game.y];
+      ur = [game.x + game.ball.w, game.y];
+      lr = [game.x + game.ball.w, game.y + game.ball.h];
+      ll = [game.x, game.y + game.ball.h];
+      c = getRotatedCorners(ul, ur, lr, ll);
       return Math.max.apply(null, (function() {
         var _i, _len, _results;
         _results = [];
@@ -582,7 +563,7 @@
       })());
     };
     gameLoop = function() {
-      var c, corner, max_x, max_y, min_x, min_y, won;
+      var c, corner, ll, lr, max_x, max_y, min_x, min_y, ul, ur, won;
       switch (game.state) {
         case "over":
           showOver();
@@ -592,7 +573,6 @@
       }
       if (game.state === "running") {
         won = processBoardDisp();
-        dispBoard();
         if (won && game.board_disp.length > 0) {
           showWin();
         }
@@ -605,6 +585,9 @@
           game.dy = game_defaults.dy;
           game.x = game.paddle_x + game.paddle.w_h - game.ball.w_h;
           game.y = game.h - game.paddle.h - game.ball.h - (getBallHeight() / 2 - game.ball.h_h);
+        }
+        if (game.l_char_row_index !== 0 && !game.ball_locked) {
+          fallingBlocks();
         }
         drawAsciiBall(game.x, game.y);
         if (game.right_down) {
@@ -620,7 +603,11 @@
           }
         }
         drawPaddle(game.paddle_x);
-        c = getBallCorners();
+        ul = [game.x, game.y];
+        ur = [game.x + game.ball.w, game.y];
+        lr = [game.x + game.ball.w, game.y + game.ball.h];
+        ll = [game.x, game.y + game.ball.h];
+        c = getRotatedCorners(ul, ur, lr, ll);
         max_y = Math.floor(Math.max.apply(null, (function() {
           var _i, _len, _results;
           _results = [];
@@ -664,7 +651,7 @@
           }
           game.dx = -game.dx;
         }
-        if (min_x - game.dy < 0) {
+        if (min_x + game.dx < 0) {
           if (!game.ball_spin || sign(game.dy) !== sign(game.ball_spin)) {
             game.dy = inc_w_limit(game.dy, game.ball_spin * 2, game.max_dy, -game.max_dy);
             game.ball_spin = inc_w_limit(game.ball_spin, game.dy, game.ball_max_spin, -game.ball_max_spin);
@@ -708,8 +695,6 @@
           game.x += game.dx;
           game.y += game.dy;
         }
-      } else {
-        dispBoard();
       }
       game.loop_cnt += 1;
     };
@@ -718,17 +703,16 @@
       default_str: "as",
       default_font: "standard",
       acc_rate: .5,
-      max_width: 800,
-      max_height: 600
+      max_w: 800,
+      max_h: 600
     };
     game_defaults = {
-      dx: 0,
+      dx: -10,
       dy: -8,
       max_dx: 10,
       max_dy: 12,
       x: -1000,
       y: -1000,
-      l_x: -1,
       l_x: -1,
       right_down: false,
       left_down: false,
@@ -737,7 +721,7 @@
       state: "splash",
       paddle_color: "white",
       board_disp: [],
-      space_width: 0,
+      space_w: 0,
       ball: {
         'cols': 4,
         'rows': 1,
@@ -754,19 +738,20 @@
       height: 0,
       mouse_min_x: 0,
       mouse_max_x: 0,
-      ascii_colors: ['#c84848', '#c66c3a', '#b47a30', '#a2a22a', '#48a048', '#4248c8'],
+      ascii_colors: ['#c84848', '#c66c3a', '#b47a30', '#a2a22a', '#48a048'],
       figlet_font: "standard",
-      font_size: 12,
+      font_size: 9,
       ball_locked: true,
-      ball_spin: 1,
+      ball_spin: 2,
       ball_angle: Math.PI / 2,
       l_ball_angle: Math.PI / 2,
       ball_da: Math.PI / 16,
       ball_spin_speed: 2,
       ball_max_spin: 1,
+      l_char_row_index: 0,
       loop_cnt: 0,
       block_rotations: [],
-      fall_interval: 400,
+      fall_interval: 300,
       fall_speed: function() {
         return Math.floor(Math.random() * 10 + 3);
       },
@@ -776,8 +761,9 @@
       m_timeout: null
     };
     updateBoardCfg = function() {
-      $("#game-canvas")[0].width = cfg.max_width;
-      $("#game-canvas")[0].height = cfg.max_height;
+      ctx.clearRect(0, 0, game.w, game.h);
+      $("#game-canvas")[0].width = cfg.max_w;
+      $("#game-canvas")[0].height = cfg.max_h;
       game.w = $("#game-canvas").width();
       game.w_h = Math.ceil(game.w / 2);
       game.h = $("#game-canvas").height();
@@ -790,7 +776,7 @@
       ctx_g.textBaseline = "top";
       ctx.font = "" + game.font_size + "px " + cfg.font_name;
       ctx_g.font = "" + game.font_size + "px " + cfg.font_name;
-      game.char_w = ctx.measureText("|").width;
+      game.char_w = ctx.measureText("]").width;
       game.char_w_h = Math.round(game.char_w / 2);
       game.font_size_h = Math.round(game.font_size / 2);
       game.ball.w = game.ball.cols * game.char_w;
@@ -803,23 +789,52 @@
       game.paddle.h_h = Math.round(game.paddle.h / 2);
       if (!game.paddle_x) {
         game.l_paddle_x = game.paddle_x;
-        return game.paddle_x = game.w_h - game.paddle.w_h;
+        game.paddle_x = game.w_h - game.paddle.w_h;
       }
+      return dispBoard();
     };
     ctx_g = $("#game-canvas")[0].getContext("2d");
     ctx = $("#brick-canvas")[0].getContext("2d");
     game = $.extend(true, {}, game_defaults);
     cfg = $.extend(true, {}, cfg_defaults);
     updateBoardCfg();
+    $.ajax({
+      url: '/fonts.json',
+      datatype: "json",
+      success: function(data) {
+        $("#font-name").attr("range", 1);
+        $("#font-name").attr("min", 1);
+        $("#font-name").attr("max", data.length);
+        $("#font-name").attr("value", data.indexOf(game_defaults.figlet_font) + 1);
+        return $("#font-name").rangeslider({
+          polyfill: false,
+          onSlide: function(p, v) {
+            if (v) {
+              game.figlet_font = data[v - 1];
+              return genDispData($('input[name=str]').val());
+            }
+          }
+        });
+      }
+    });
+    $("#font-size").rangeslider({
+      polyfill: false,
+      onSlide: function(p, v) {
+        if (v) {
+          game.font_size = +v;
+          return genDispData($('input[name=str]').val());
+        }
+      }
+    });
     routie(':str?/:font?/:size?', function(str, font, font_size) {
       var animFrame, canvas, decoded, recursiveAnim;
       if (str) {
-        decoded = decodeURI(str);
+        decoded = decodeURIComponent(str);
         $('input[name=str]').val(decoded);
         if (font) {
-          game.figlet_font = decodeURI(font);
+          game.figlet_font = decodeURIComponent(font);
           if (font_size) {
-            game.font_size = +decodeURI(font_size);
+            game.font_size = +decodeURIComponent(font_size);
           }
         }
         genDispData(decoded);

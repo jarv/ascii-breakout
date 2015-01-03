@@ -22,11 +22,12 @@
         <form action="#" id="ascii-submit">
             <input type="text" placeholder="enter any text" name="str" />
             <button name="go">GO!</button>
-            <input type=range id=font-size min=10 value=20 max=100 step=1>
+            <input type="range" id="font-size" min=6 value=9 max=50 step=1>
+<br/>
+            <input type="range" id="font-name"  min=6 value=9 max=50 step=1>
         </form>
         <div class="select-box">
-          <div class="select-wrap"><input type="radio" name="font" id="Isometric4" value="Isometric4"> <label name="Isometric4" for="Isometric4">Isometric4</label></div>
-        </div> 
+        </div>  
         <div class="actions actions-paused">
           <ul>
             <li>&lt;esc&gt; to continue</li>
@@ -54,10 +55,15 @@
           s.type = 'text/javascript'; m = document.getElementsByTagName('script')[0];
           m.parentNode.insertBefore(s, m);
           })();
+
+
         },
       }
     </script>
     <script src="js/vendor/webfont-1.5.6.min.js"></script>
+    <script src="js/vendor/rangeslider.min.js"></script>
+    <script>
+    </script>
 
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
