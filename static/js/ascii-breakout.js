@@ -3,23 +3,24 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(document).ready(function() {
-    var cfg, cfg_defaults, checkBallCollision, checkCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallHeight, getColor, getRotatedCorners, inc_w_limit, pointInBrick, processBoardDisp, showOver, showPaused, showRunning, showSplash, showWin, sign, updateBoardCfg;
+    var cfg, cfg_defaults, checkBallCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallHeight, getColor, getRotatedCorners, handleBallCollision, inc_w_limit, pointInBrick, processBoardDisp, showOver, showPaused, showRunning, showSplash, showWin, sign, updateBoardCfg, updateLives, updatePoints;
     sign = function(x) {
       return x > 0 ? 1 : x < 0 ? -1 : 0;
     };
     showWin = function() {
       game.state = "win";
-      $(".title").html("Hey, looks like you won. Congratulations!");
+      $(".title").html("You won, Congratulations!");
       $(".actions-paused").hide();
       $(".actions-splash").show();
       return $(".splash").show();
     };
     showRunning = function() {
       $(".splash").hide();
-      updateBoardCfg();
+      updateLives(game_defaults.lives);
       return game.state = "running";
     };
     showOver = function() {
+      updateBoardCfg();
       game.state = "over";
       game.ball_locked = true;
       $(".title").html("Game Over!");
@@ -40,6 +41,19 @@
       $(".actions-paused").hide();
       $(".actions-splash").show();
       return $(".splash").show();
+    };
+    updatePoints = function(val) {
+      game.points = val;
+      $("span.points").html(val);
+    };
+    updateLives = function(val) {
+      $("span.lives").html(val);
+      if (val < 1) {
+        return false;
+      } else {
+        game.lives = val;
+        return true;
+      }
     };
     $(document).click(function(e) {
       switch (game.state) {
@@ -118,7 +132,7 @@
       genDispData($('input[name=str]').val());
     });
     $("#ascii-submit").submit(function(e) {
-      if ($('input[name=str]').val().length > 1) {
+      if ($('input[name=str]').val().length > 0) {
         showRunning();
       }
       e.preventDefault();
@@ -128,7 +142,7 @@
       ctx_g.save();
       ctx_g.translate(game.l_x + game.ball.w_h, game.l_y + game.ball.h_h);
       ctx_g.rotate(game.l_ball_angle);
-      ctx_g.clearRect(-game.ball.w_h - game.char_w, -game.ball.h_h - game.font_size, game.ball.w + game.char_w * 3, game.ball.h + game.font_size * 3);
+      ctx_g.clearRect(-game.ball.w_h - game.p_char_w, -game.ball.h_h - game.p_font_size, game.ball.w + game.p_char_w * 3, game.ball.h + game.p_font_size * 3);
       ctx_g.restore();
       ctx_g.fillStyle = game.paddle_color;
       ctx_g.save();
@@ -143,10 +157,7 @@
           }
           return _results;
         })()).join("");
-        if (!row || row === void 0) {
-          alert("undefined!!");
-        }
-        ctx_g.fillText(row, -game.ball.w_h, -game.ball.h_h + r * game.font_size);
+        ctx_g.fillText(row, -game.ball.w_h, -game.ball.h_h + r * game.p_font_size);
       }
       ctx_g.restore();
       if (game.loop_cnt % game.ball_spin_speed === 0) {
@@ -295,34 +306,31 @@
       return true;
     };
     checkBallCollision = function(brick_x, brick_y) {
-      var c, col, corner, ll, lr, row, ul, ur, xpos, ypos, _i, _j, _k, _len, _ref, _ref1;
+      var c, col, corner, index, ll, lr, row, ul, ur, xpos, ypos, _i, _j, _k, _len, _ref, _ref1;
       xpos = game.x;
       ypos = game.y;
       for (row = _i = 1, _ref = game.ball.rows; 1 <= _ref ? _i <= _ref : _i >= _ref; row = 1 <= _ref ? ++_i : --_i) {
         for (col = _j = 1, _ref1 = game.ball.cols; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; col = 1 <= _ref1 ? ++_j : --_j) {
           ul = [xpos, ypos];
-          ur = [xpos + game.char_w, ypos];
-          lr = [xpos + game.char_w, ypos + game.font_size];
-          ll = [xpos, ypos + game.font_size];
+          ur = [xpos + game.p_char_w, ypos];
+          lr = [xpos + game.p_char_w, ypos + game.p_font_size];
+          ll = [xpos, ypos + game.p_font_size];
           c = getRotatedCorners(ul, ur, lr, ll);
-          for (_k = 0, _len = c.length; _k < _len; _k++) {
-            corner = c[_k];
+          for (index = _k = 0, _len = c.length; _k < _len; index = ++_k) {
+            corner = c[index];
             if (pointInBrick(corner[0] + game.dx, corner[1] + game.dy, brick_x, brick_y)) {
               return [corner[0], corner[1]];
             }
           }
-          xpos += game.char_w;
+          xpos += game.p_char_w;
         }
-        ypos += game.font_size;
+        xpos = game.x;
+        ypos += game.p_font_size;
       }
       return false;
     };
-    checkCollision = function(brick_x, brick_y) {
-      var aoa, c, c_brick_x, c_brick_y;
-      c = checkBallCollision(brick_x, brick_y);
-      if (!c) {
-        return false;
-      }
+    handleBallCollision = function(c, brick_x, brick_y) {
+      var aoa, c_brick_x, c_brick_y;
       c_brick_x = brick_x + game.char_w_h;
       c_brick_y = brick_y + game.font_size_h;
       aoa = Math.atan2(c[1] - c_brick_y, c[0] - c_brick_x);
@@ -371,9 +379,12 @@
       return board_disp;
     };
     processBoardDisp = function() {
-      var column, column_index, has_won, row, row_index, xpos, ypos, _i, _j, _len, _len1, _ref;
+      var c, column, column_index, has_won, last_c, row, row_index, xpos, xpos_c, ypos, ypos_c, _i, _j, _len, _len1, _ref;
       ypos = 0;
       has_won = true;
+      xpos_c = null;
+      ypos_c = null;
+      last_c = null;
       _ref = game.board_disp;
       for (row_index = _i = 0, _len = _ref.length; _i < _len; row_index = ++_i) {
         row = _ref[row_index];
@@ -382,7 +393,11 @@
           column = row[column_index];
           if (column !== " ") {
             has_won = false;
-            if (checkCollision(xpos, ypos)) {
+            c = checkBallCollision(xpos, ypos);
+            if (c) {
+              last_c = c;
+              xpos_c = xpos;
+              ypos_c = ypos;
               game.board_disp[row_index][column_index] = " ";
               ctx.clearRect(xpos, ypos, game.char_w, game.font_size);
             }
@@ -390,6 +405,9 @@
           xpos += game.char_w;
         }
         ypos += game.font_size;
+      }
+      if (last_c) {
+        handleBallCollision(last_c, xpos_c, ypos_c);
       }
       return has_won;
     };
@@ -441,7 +459,7 @@
         ctx.save();
         ctx.translate(r.x + game.char_w_h, ypos + game.font_size_h);
         ctx.rotate(angle);
-        ctx.clearRect(-game.char_w_h - game.char_w, -game.font_size_h - game.font_size, game.char_w * 3, game.font_size * 3);
+        ctx.clearRect(-game.char_w_h, -game.font_size_h, game.char_w, game.font_size);
         return ctx.restore();
       };
       _ref = game.block_rotations.filter(function(elem) {
@@ -452,7 +470,7 @@
         if ((r.y + game.font_size > game.h - game.paddle.h) && (r.x + game.char_w > game.paddle_x && r.x < game.paddle_x + game.paddle.w)) {
           r.d = false;
           doBonus();
-        } else if (checkCollision(r.x, r.y)) {
+        } else if (checkBallCollision(r.x, r.y)) {
           r.d = false;
           updateBoardCfg();
         } else {
@@ -502,6 +520,7 @@
             d: true
           });
           last_row[row_index] = " ";
+          ctx.clearRect(xpos + game.char_w * row_index, game.l_char_row_index * game.font_size, game.char_w, game.font_size);
         }
       }
     };
@@ -656,6 +675,7 @@
             game.dy = inc_w_limit(game.dy, game.ball_spin * 2, game.max_dy, -game.max_dy);
             game.ball_spin = inc_w_limit(game.ball_spin, game.dy, game.ball_max_spin, -game.ball_max_spin);
           }
+          game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy));
           game.dx = -game.dx;
         }
         if (min_y + game.dy < 0) {
@@ -663,6 +683,7 @@
             game.dx = inc_w_limit(game.dx, -game.ball_spin * 2, game.max_dx, -game.max_dx);
             game.ball_spin = inc_w_limit(game.ball_spin, -game.dx, game.ball_max_spin, -game.ball_max_spin);
           }
+          game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy));
           game.dy = -game.dy;
         } else if (max_y + game.dy > (game.h - game.paddle.h)) {
           if (max_x > game.paddle_x && min_x < (game.paddle_x + game.paddle.w)) {
@@ -672,11 +693,11 @@
             }
             game.dx = inc_w_limit(game.dx, -game.paddle_dir * 2, game.max_dx, -game.max_dx);
             game.ball_spin = inc_w_limit(game.ball_spin, -game.paddle_dir, game.ball_max_spin, -game.ball_max_spin);
-            if (game.x + game.ball.w < game.paddle_x + game.char_w) {
+            if (game.x + game.ball.w < game.paddle_x + game.p_char_w) {
               game.dx = -game.max_dx;
               game.ball_spin = -game.ball_max_spin;
             }
-            if (game.x > game.paddle_x + game.paddle.w - game.char_w) {
+            if (game.x > game.paddle_x + game.paddle.w - game.p_char_w) {
               game.dx = game.max_dx;
               game.ball_spin = game.ball_max_spin;
             }
@@ -684,7 +705,12 @@
             game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy));
           } else {
             if (game.state === "running") {
-              showOver();
+              if (!updateLives(--game.lives)) {
+                showOver();
+              } else {
+                updateBoardCfg();
+                game.ball_locked = true;
+              }
             }
             game.dy = -game.dy;
           }
@@ -700,14 +726,14 @@
     };
     cfg_defaults = {
       font_name: "pressStart",
-      default_str: "as",
+      default_str: "------",
       default_font: "standard",
       acc_rate: .5,
       max_w: 800,
       max_h: 600
     };
     game_defaults = {
-      dx: -10,
+      dx: 0,
       dy: -8,
       max_dx: 10,
       max_dy: 12,
@@ -723,8 +749,8 @@
       board_disp: [],
       space_w: 0,
       ball: {
-        'cols': 4,
-        'rows': 1,
+        'cols': 10,
+        'rows': 3,
         'w': 0,
         'h': 0
       },
@@ -741,21 +767,24 @@
       ascii_colors: ['#c84848', '#c66c3a', '#b47a30', '#a2a22a', '#48a048'],
       figlet_font: "standard",
       font_size: 9,
+      p_font_size: 9,
       ball_locked: true,
-      ball_spin: 2,
-      ball_angle: Math.PI / 2,
-      l_ball_angle: Math.PI / 2,
+      ball_spin: 0,
+      ball_angle: 0,
+      l_ball_angle: 0,
       ball_da: Math.PI / 16,
       ball_spin_speed: 2,
       ball_max_spin: 1,
       l_char_row_index: 0,
       loop_cnt: 0,
       block_rotations: [],
-      fall_interval: 300,
+      fall_interval: 200,
       fall_speed: function() {
         return Math.floor(Math.random() * 10 + 3);
       },
       bonuses: [],
+      points: 0,
+      lives: 3,
       paddle_x: void 0,
       paddle_dir: 0,
       m_timeout: null
@@ -775,17 +804,20 @@
       ctx.textBaseline = "top";
       ctx_g.textBaseline = "top";
       ctx.font = "" + game.font_size + "px " + cfg.font_name;
-      ctx_g.font = "" + game.font_size + "px " + cfg.font_name;
+      ctx_g.font = "" + game.p_font_size + "px " + cfg.font_name;
       game.char_w = ctx.measureText("]").width;
+      game.p_char_w = ctx_g.measureText("]").width;
       game.char_w_h = Math.round(game.char_w / 2);
+      game.p_char_w_h = Math.round(game.p_char_w / 2);
       game.font_size_h = Math.round(game.font_size / 2);
-      game.ball.w = game.ball.cols * game.char_w;
+      game.p_font_size_h = Math.round(game.p_font_size / 2);
+      game.ball.w = game.ball.cols * game.p_char_w;
       game.ball.w_h = Math.round(game.ball.w / 2);
-      game.ball.h = game.ball.rows * game.font_size;
+      game.ball.h = game.ball.rows * game.p_font_size;
       game.ball.h_h = Math.round(game.ball.h / 2);
-      game.paddle.w = game.paddle.cols * game.char_w;
+      game.paddle.w = game.paddle.cols * game.p_char_w;
       game.paddle.w_h = Math.round(game.paddle.w / 2);
-      game.paddle.h = game.paddle.rows * game.font_size;
+      game.paddle.h = game.paddle.rows * game.p_font_size;
       game.paddle.h_h = Math.round(game.paddle.h / 2);
       if (!game.paddle_x) {
         game.l_paddle_x = game.paddle_x;
@@ -810,6 +842,7 @@
           polyfill: false,
           onSlide: function(p, v) {
             if (v) {
+              $(".font-disp").html(data[v - 1]);
               game.figlet_font = data[v - 1];
               return genDispData($('input[name=str]').val());
             }
@@ -822,6 +855,7 @@
       onSlide: function(p, v) {
         if (v) {
           game.font_size = +v;
+          $("#js-rangeslider-0 .rangeslider__handle").html("<div style='overflow: hidden;'>" + v + "</span>");
           return genDispData($('input[name=str]').val());
         }
       }

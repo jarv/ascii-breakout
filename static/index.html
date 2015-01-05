@@ -23,7 +23,6 @@
             <input type="text" placeholder="enter any text" name="str" />
             <button name="go">GO!</button>
             <input type="range" id="font-size" min=6 value=9 max=50 step=1>
-<br/>
             <input type="range" id="font-name"  min=6 value=9 max=50 step=1>
         </form>
         <div class="select-box">
@@ -31,17 +30,22 @@
         <div class="actions actions-paused">
           <ul>
             <li>&lt;esc&gt; to continue</li>
-            <li>&lt;enter&gt; to start a new game</li>
             <li class="share-link"></li>
           </ul>
         </div>
         <div class="actions actions-splash">
           <ul>
-            <li>&lt;enter&gt; to start a new game</li>
+            <li class="font-disp"></li>
             <li class="share-link"></li>
           </ul>
         </div>
       </div>
+      <div class="status">
+        <ul>
+          <li>points: <span class="points">0<span></li>
+          <li>lives: <span class="lives">0</span></li>
+        </ul> 
+        </div>
       <canvas id="game-canvas" class="canvas"></canvas>
       <canvas id="brick-canvas" class="canvas"></canvas>
     </div>

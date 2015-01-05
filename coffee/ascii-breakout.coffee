@@ -13,17 +13,18 @@ $(document).ready(() ->
 
   showWin = () ->
     game.state = "win"
-    $(".title").html("Hey, looks like you won. Congratulations!")
+    $(".title").html("You won, Congratulations!")
     $(".actions-paused").hide()
     $(".actions-splash").show()
     $(".splash").show()
 
   showRunning = () ->
     $(".splash").hide()
-    updateBoardCfg()
+    updateLives(game_defaults.lives)
     game.state = "running"
 
   showOver = () ->
+    updateBoardCfg()
     game.state = "over"
     game.ball_locked = true
     $(".title").html("Game Over!")
@@ -44,6 +45,20 @@ $(document).ready(() ->
     $(".actions-paused").hide()
     $(".actions-splash").show()
     $(".splash").show()
+
+
+  updatePoints = (val) ->
+    game.points = val
+    $("span.points").html(val)
+    return
+
+  updateLives = (val) ->
+    $("span.lives").html(val)
+    if val < 1
+      return false
+    else
+      game.lives = val
+      return true
 
   # Mouse click events
 
@@ -123,7 +138,7 @@ $(document).ready(() ->
   )
 
   $("#ascii-submit").submit((e) ->
-    if $('input[name=str]').val().length > 1
+    if $('input[name=str]').val().length > 0
       showRunning()
     e.preventDefault()
     return
@@ -135,8 +150,8 @@ $(document).ready(() ->
     ctx_g.translate(game.l_x + game.ball.w_h, game.l_y + game.ball.h_h)
     ctx_g.rotate(game.l_ball_angle)
     ctx_g.clearRect(
-      -game.ball.w_h - game.char_w, -game.ball.h_h - game.font_size,
-      game.ball.w + game.char_w * 3, game.ball.h + game.font_size * 3)
+      -game.ball.w_h - game.p_char_w, -game.ball.h_h - game.p_font_size,
+      game.ball.w + game.p_char_w * 3, game.ball.h + game.p_font_size * 3)
     ctx_g.restore()
 
     ctx_g.fillStyle = game.paddle_color
@@ -146,9 +161,7 @@ $(document).ready(() ->
 
     for r in [0..(game.ball.rows - 1)]
       row = ("O" for i in [1..game.ball.cols]).join("")
-      if not row or row == undefined
-        alert("undefined!!")
-      ctx_g.fillText(row, -game.ball.w_h, -game.ball.h_h + r * game.font_size)
+      ctx_g.fillText(row, -game.ball.w_h, -game.ball.h_h + r * game.p_font_size)
     ctx_g.restore()
 
     if game.loop_cnt % game.ball_spin_speed == 0
@@ -270,24 +283,19 @@ $(document).ready(() ->
       for col in [1..game.ball.cols]
 
         ul = [xpos, ypos]
-        ur = [xpos + game.char_w, ypos]
-        lr = [xpos + game.char_w, ypos + game.font_size]
-        ll = [xpos, ypos + game.font_size]
+        ur = [xpos + game.p_char_w, ypos]
+        lr = [xpos + game.p_char_w, ypos + game.p_font_size]
+        ll = [xpos, ypos + game.p_font_size]
         c = getRotatedCorners(ul, ur, lr, ll)
-        for corner in c
+        for corner, index in c
           if pointInBrick(corner[0] + game.dx, corner[1] + game.dy, brick_x, brick_y)
             return [corner[0], corner[1]]
-        xpos += game.char_w
-      ypos += game.font_size
+        xpos += game.p_char_w
+      xpos = game.x
+      ypos += game.p_font_size
     return false
 
-  checkCollision = (brick_x, brick_y) ->
-    # checks whether any of the characters
-    # of the ball collide with a brick at position
-    # brick_x, brick_y (upper left corner)
-    c = checkBallCollision(brick_x, brick_y)
-    if not c
-      return false
+  handleBallCollision = (c, brick_x, brick_y) ->
     # center brick
     c_brick_x = brick_x + game.char_w_h
     c_brick_y = brick_y + game.font_size_h
@@ -342,19 +350,30 @@ $(document).ready(() ->
   processBoardDisp  = () ->
     ypos = 0
     has_won = true
+    xpos_c = null
+    ypos_c = null
+    last_c = null
+
     for row, row_index in game.board_disp
       xpos = game.w_h - Math.round(row.length * game.char_w / 2)
       for column, column_index in row
         if column != " "
           has_won = false
-          if checkCollision(xpos, ypos)
+          c = checkBallCollision(xpos, ypos)
+          if c
+            last_c = c
+            xpos_c = xpos
+            ypos_c = ypos
             game.board_disp[row_index][column_index] = " "
             ctx.clearRect(xpos, ypos, game.char_w, game.font_size)
-            # ctx.clearRect(0, 0, game.w, game.h)
-            # dispBoard()
 
         xpos += game.char_w
       ypos += game.font_size
+
+    if last_c
+      # if there was a collision we bounce the ball
+      # off of the last brick that we ran into
+      handleBallCollision(last_c, xpos_c, ypos_c)
     return has_won
 
   doBonus = () ->
@@ -399,9 +418,9 @@ $(document).ready(() ->
       ctx.save()
       ctx.translate(r.x + game.char_w_h, ypos + game.font_size_h)
       ctx.rotate(angle)
-      ctx.clearRect(-game.char_w_h - game.char_w,
-                    -game.font_size_h - game.font_size,
-                    game.char_w * 3, game.font_size * 3)
+      ctx.clearRect(-game.char_w_h,
+                    -game.font_size_h,
+                    game.char_w, game.font_size)
       ctx.restore()
 
     # Display falling blocks
@@ -412,7 +431,7 @@ $(document).ready(() ->
         # paddle collision
         r.d = false
         doBonus()
-      else if checkCollision(r.x, r.y)
+      else if checkBallCollision(r.x, r.y)
         r.d = false
         updateBoardCfg()
       else
@@ -466,6 +485,9 @@ $(document).ready(() ->
         })
         # remove the character from the board
         last_row[row_index] = " "
+        ctx.clearRect(xpos + game.char_w * row_index,
+                      game.l_char_row_index * game.font_size,
+                      game.char_w, game.font_size)
 
     return
 
@@ -594,6 +616,8 @@ $(document).ready(() ->
         if not game.ball_spin or sign(game.dy) != sign(game.ball_spin)
           game.dy = inc_w_limit(game.dy, game.ball_spin * 2, game.max_dy, -game.max_dy)
           game.ball_spin = inc_w_limit(game.ball_spin, game.dy, game.ball_max_spin, -game.ball_max_spin)
+        # if the ball has a slow verit speed, reset it to the default
+        game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy))
         game.dx = -game.dx
       if (min_y + game.dy < 0)
         # if the ball is not spinning or if it is spinning in the opposite
@@ -601,6 +625,8 @@ $(document).ready(() ->
         if not game.ball_spin or sign(game.dx) == sign(game.ball_spin)
           game.dx = inc_w_limit(game.dx, -game.ball_spin * 2, game.max_dx, -game.max_dx)
           game.ball_spin = inc_w_limit(game.ball_spin, -game.dx, game.ball_max_spin, -game.ball_max_spin)
+        # if the ball has a slow verit speed, reset it to the default
+        game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy))
         game.dy = -game.dy
       else if (max_y + game.dy > (game.h - game.paddle.h))
         # ball is at the bottom of the board
@@ -616,10 +642,10 @@ $(document).ready(() ->
           game.ball_spin = inc_w_limit(game.ball_spin, -game.paddle_dir, game.ball_max_spin, -game.ball_max_spin)
 
           # CORNER SHOTS - SUSPEND ALL LAWS OF PHYSICS EVEN MORE SO !!1!
-          if (game.x + game.ball.w < game.paddle_x + game.char_w)
+          if (game.x + game.ball.w < game.paddle_x + game.p_char_w)
             game.dx = -game.max_dx
             game.ball_spin = -game.ball_max_spin
-          if (game.x > game.paddle_x + game.paddle.w - game.char_w)
+          if (game.x > game.paddle_x + game.paddle.w - game.p_char_w)
             game.dx =  game.max_dx
             game.ball_spin = game.ball_max_spin
 
@@ -628,7 +654,11 @@ $(document).ready(() ->
           game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy))
         else
           if game.state == "running"
-            showOver()
+            if not updateLives(--game.lives)
+              showOver()
+            else
+              updateBoardCfg()
+              game.ball_locked = true
           game.dy = -game.dy
 
       if not game.ball_locked
@@ -644,7 +674,7 @@ $(document).ready(() ->
     # through a single game
     # font_name: "'Courier New', Monospace"
     font_name: "pressStart"
-    default_str: "as"
+    default_str: "------"
     default_font: "standard"
     acc_rate: .5
     max_w: 800
@@ -654,7 +684,7 @@ $(document).ready(() ->
 
   game_defaults = {
     # initial speed
-    dx: -10
+    dx: 0
     dy: -8
     # Max dx for when the ball
     # hits a moving paddle
@@ -692,7 +722,7 @@ $(document).ready(() ->
     #  5x3   OOOOO
     #        OOOOO
 
-    ball: {'cols': 4, 'rows': 1, 'w': 0, 'h': 0}
+    ball: {'cols': 10, 'rows': 3, 'w': 0, 'h': 0}
     # paddle
     # [OOOOOOO]
     paddle: {'cols': 9, 'rows': 1, 'w': 0, 'h': 10}
@@ -707,13 +737,14 @@ $(document).ready(() ->
     figlet_font: "standard"
 
     font_size: 9
+    p_font_size: 9
     # ball locked on paddle
     ball_locked: true
     # what direction the ball is spinning
     # and its current angle
-    ball_spin: 2
-    ball_angle: Math.PI / 2
-    l_ball_angle: Math.PI / 2
+    ball_spin: 0
+    ball_angle: 0
+    l_ball_angle: 0
     ball_da: Math.PI / 16
     ball_spin_speed: 2
     ball_max_spin: 1
@@ -723,11 +754,13 @@ $(document).ready(() ->
     # periodic rotations
     loop_cnt: 0
     block_rotations: []
-    fall_interval: 300
+    fall_interval: 200
     fall_speed: () -> Math.floor(Math.random() * 10 + 3)
 
     # bonus items
     bonuses: []
+    points: 0
+    lives: 3
 
     # horizontal paddle location and
     # the paddle direction
@@ -759,17 +792,20 @@ $(document).ready(() ->
     ctx.textBaseline = "top"
     ctx_g.textBaseline = "top"
     ctx.font = "#{game.font_size}px #{cfg.font_name}"
-    ctx_g.font = "#{game.font_size}px #{cfg.font_name}"
+    ctx_g.font = "#{game.p_font_size}px #{cfg.font_name}"
     game.char_w = ctx.measureText("]").width
+    game.p_char_w = ctx_g.measureText("]").width
     game.char_w_h = Math.round(game.char_w / 2)
+    game.p_char_w_h = Math.round(game.p_char_w / 2)
     game.font_size_h = Math.round(game.font_size / 2)
-    game.ball.w = game.ball.cols * game.char_w
+    game.p_font_size_h = Math.round(game.p_font_size / 2)
+    game.ball.w = game.ball.cols * game.p_char_w
     game.ball.w_h = Math.round(game.ball.w / 2)
-    game.ball.h = game.ball.rows * game.font_size
+    game.ball.h = game.ball.rows * game.p_font_size
     game.ball.h_h = Math.round(game.ball.h / 2)
-    game.paddle.w = game.paddle.cols * game.char_w
+    game.paddle.w = game.paddle.cols * game.p_char_w
     game.paddle.w_h = Math.round(game.paddle.w / 2)
-    game.paddle.h = game.paddle.rows * game.font_size
+    game.paddle.h = game.paddle.rows * game.p_font_size
     game.paddle.h_h = Math.round(game.paddle.h / 2)
     if not game.paddle_x
       game.l_paddle_x = game.paddle_x
@@ -802,6 +838,7 @@ $(document).ready(() ->
         polyfill: false,
         onSlide: (p, v) ->
           if v
+            $(".font-disp").html(data[v - 1])
             game.figlet_font = data[v - 1]
             genDispData($('input[name=str]').val())
       })
@@ -814,6 +851,7 @@ $(document).ready(() ->
     onSlide: (p, v) ->
       if v
         game.font_size = +v
+        $("#js-rangeslider-0 .rangeslider__handle").html("<div style='overflow: hidden;'>#{v}</span>")
         genDispData($('input[name=str]').val())
   })
 

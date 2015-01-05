@@ -244,6 +244,18 @@ input[type="submit"], input[type="text"] {
   z-index: 200;
   margin-top: 5%;
   padding-top: 5%; }
+  .content div.status {
+    right: 0px;
+    top: 0px;
+    position: absolute;
+    width: 150px;
+    height: 50px;
+    border: 1px solid red;
+    z-index: 700;
+    text-align: left;
+    font-family: "pressStart";
+    font-size: 12px;
+    color: #b3b3b3; }
   .content .canvas {
     position: absolute;
     right: 0px;
@@ -286,10 +298,6 @@ input[type="submit"], input[type="text"] {
       font-family: "pressStart";
       font-size: 12px;
       border: 0; }
-    .content .splash input[type="range"] {
-      display: block;
-      width: 50%;
-      margin: 0px auto; }
     .content .splash button {
       margin: 0px;
       vertical-align: top;
@@ -305,12 +313,18 @@ input[type="submit"], input[type="text"] {
       background-color: #477dca; }
     .content .splash button:hover {
       background-color: #3264ac; }
+    .content .splash li.font-disp {
+      margin: 0px;
+      margin-bottom: 4px; }
     .content .splash li.share-link {
       display: block;
       background-color: black;
+      height: 25px;
       text-shadow: none;
       padding-top: 4px; }
       .content .splash li.share-link a {
+        color: #cccc00; }
+      .content .splash li.share-link a:hover {
         color: yellow; }
     .content .splash .rangeslider,
     .content .splash .rangeslider__fill {
@@ -318,7 +332,9 @@ input[type="submit"], input[type="text"] {
       display: block;
       height: 30px;
       width: 60%;
-      margin: 0px auto;
+      margin-right: auto;
+      margin-left: auto;
+      margin-bottom: 10px;
       -moz-box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3);
       -webkit-box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3);
       box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3); }
@@ -339,7 +355,12 @@ input[type="submit"], input[type="text"] {
       height: 30px;
       position: absolute;
       top: 0px;
-      outline: 1px solid gray; }
+      outline: 1px solid gray;
+      font-size: 24px;
+      font-weight: normal;
+      color: black;
+      text-shadow: none;
+      overflow: hidden; }
     .content .splash .rangeslider__handle:after {
       content: "";
       display: block;
