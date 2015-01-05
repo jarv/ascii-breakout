@@ -81,20 +81,21 @@ var Figlet = (typeof exports !== "undefined" ? exports : window).Figlet = {
 
   parsePhrase: function(str, font, fn) {
     var disp_data = [], word_boundaries = [],
-        _i, _j, _k, len, space_width;
+        _i, _j, _k, _l, _m, _len, _len2, space_width, 
+        ns_starts = [];
 
     if (! str) {
       fn(disp_data);
       return;
     }  
 
-    len = str.length;
+    _len = str.length;
 
 		Figlet.parseFont(font, function() {
       var chars = [], spaces = [],
         height, line;
 
-      for (_i = 0; _i < len; _i++) {
+      for (_i = 0; _i < _len; _i++) {
 				chars[_i] = Figlet.parseChar(str.charCodeAt(_i), font);
         if (str.charCodeAt(_i) === 32) {
           spaces.push(_i);
@@ -104,7 +105,7 @@ var Figlet = (typeof exports !== "undefined" ? exports : window).Figlet = {
       height = chars[0].length;
 			for (_j = 0; _j < height; _j++) {
         line = [];
-				for (_k = 0; _k < len; _k++) {
+				for (_k = 0; _k < _len; _k++) {
           if (_j === 0 && spaces.indexOf(_k) > -1) {
             word_boundaries.push(line.length);
           }
@@ -114,7 +115,24 @@ var Figlet = (typeof exports !== "undefined" ? exports : window).Figlet = {
         if (! line.every(function(elem) { return elem == " " })) {
 				  disp_data.push(line);
         }
+
 			}
+
+      // remove leading spaces
+      for (_l = 0, _len = disp_data.length; _l < _len; _l++) {
+        for (_m = 0, _len2 = disp_data[_l].length; _m < _len2; _m++) {
+          if (disp_data[_l][_m] != ' ') {
+            ns_starts[_l] = _m;
+            break;
+          }
+        }
+      }
+
+      if (ns_starts.length > 0) {
+        for (_l = 0, _len=disp_data.length; _l < _len; _l++) {
+          disp_data[_l] = disp_data[_l].splice(Math.min.apply(Math, ns_starts))
+        }
+      }
       fn(disp_data, word_boundaries, space_width);
     });
   }
