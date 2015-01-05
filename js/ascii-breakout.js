@@ -802,7 +802,7 @@
     };
     cfg_defaults = {
       font_name: "pressStart",
-      default_str: "------",
+      default_str: "ASCII BREAKOUT Type whatever you want and play!",
       default_font: "standard",
       acc_rate: .5,
       max_w: 800,
