@@ -14,13 +14,12 @@ $(document).ready(() ->
   showWin = () ->
     game.state = "win"
     $(".title").html("You won, Congratulations!")
-    $(".actions-paused").hide()
-    $(".actions-splash").show()
     $(".splash").show()
+    showTwitter()
+    $("#ascii-submit").show()
 
   showRunning = () ->
     $(".splash").hide()
-    updateLives(game_defaults.lives)
     game.state = "running"
 
   showOver = () ->
@@ -28,37 +27,90 @@ $(document).ready(() ->
     game.state = "over"
     game.ball_locked = true
     $(".title").html("Game Over!")
-    $(".actions-paused").hide()
-    $(".actions-splash").show()
     $(".splash").show()
+    $("#ascii-submit").show()
+    showTwitter()
 
   showPaused = () ->
     game.state = "paused"
     $(".title").html("Game Paused")
-    $(".actions-splash").hide()
-    $(".actions-paused").show()
     $(".splash").show()
+    $("#ascii-submit").hide()
+    $(".twitter-share").hide()
+    $(".social-links").hide()
+
 
   showSplash = () ->
     game.state = "splash"
+    $("#msg-flash").hide()
     $(".title").html("ascii breakout")
-    $(".actions-paused").hide()
-    $(".actions-splash").show()
     $(".splash").show()
+    $("#ascii-submit").show()
+    $(".twitter-share").hide()
+
+  msgFlash = (str, pause, speed) ->
+    $("#msg-flash").html(str)
+    if pause
+      game.flash = true
+    $("#msg-flash").fadeIn(speed, () ->
+      game.flash = false
+      $("#msg-flash").fadeOut("slow", () ->
+      )
+    )
+
+  showTwitter = () ->
+    msg = "I scored #{game.points} points on http://ascii-breakout.com"
+    encoded = encodeURIComponent(msg)
+    $(".twitter-share").html("""<a target="_blank"  href="https://twitter.com/home?status=#{encoded}">Share your score with a link to this game on twitter!"</a>""")
+    $(".twitter-share").show()
 
 
-  updatePoints = (val) ->
-    game.points = val
-    $("span.points").html(val)
+
+  resetPoints = () ->
+    game.points = game_defaults.points
+    $("td.points").html(game.points)
     return
 
-  updateLives = (val) ->
-    $("span.lives").html(val)
-    if val < 1
-      return false
+  addPoints = (val) ->
+    game.points += val * game.bonus
+    $("td.points").html(game.points)
+    return
+
+  resetLives = () ->
+    game.lives = game_defaults.lives
+    $("td.lives").html(game.lives)
+    return
+
+  removeLives = (val) ->
+    game.lives -= val
+    $("td.lives").html(game.lives)
+    if not game.lives
+      showOver()
     else
-      game.lives = val
-      return true
+      updateBoardCfg()
+      if game.lives > 1
+        l = "#{game.lives} lives remaining"
+      else
+        l = "One life remaining"
+      msgFlash(l, false, "slow")
+      game.ball_locked = true
+
+  addBonus = (val) ->
+    game.bonus += val
+    $("td.bonus").html("#{game.bonus}x")
+    $("td.bonuses").html("#{game.bonuses.length}")
+
+  resetBonuses = () ->
+    game.bonuses = []
+    game.paddle = game_defaults.paddle
+    game.ball = game_defaults.ball
+    game.fall_interval = game_defaults.fall_interval
+    game.fall_speed = game_defaults.fall_speed
+    game.brick_bounce = true
+    game.bonus = game_defaults.bonus
+    $("td.bonus").html("#{game.bonus}x")
+    $("td.bonuses").html("#{game.bonuses.length}")
+
 
   # Mouse click events
 
@@ -69,6 +121,9 @@ $(document).ready(() ->
           game.ball_locked = false
         else
           showPaused()
+      when "paused"
+        showRunning()
+
     return
   )
 
@@ -86,6 +141,8 @@ $(document).ready(() ->
       when "running"
         if (evt.keyCode == 27) # esc
           showPaused()
+        if (evt.keyCode == 32) # space
+          game.ball_locked = false
     if (evt.keyCode == 39) # ->
       game.right_down = true
       game.paddle_dir = 1
@@ -139,6 +196,10 @@ $(document).ready(() ->
 
   $("#ascii-submit").submit((e) ->
     if $('input[name=str]').val().length > 0
+      resetBonuses()
+      resetLives()
+      resetPoints()
+      genDispData($('input[name=str]').val())
       showRunning()
     e.preventDefault()
     return
@@ -225,7 +286,7 @@ $(document).ready(() ->
       encoded_font = encodeURIComponent(game.figlet_font)
       encoded_font_size = encodeURIComponent(game.font_size)
       if str.length > 0
-        $(".share-link").html("""<a href="##{encoded_str}/#{encoded_font}/#{encoded_font_size}">Use this link to share this game with a friend!</a>""")
+        $(".share-link").html("""Link to this game! <a href="##{encoded_str}/#{encoded_font}/#{encoded_font_size}">#{str.replace(/\W/g, "-")}</a>""")
       else
         $(".share-link").html("")
       updateBoardCfg()
@@ -276,7 +337,7 @@ $(document).ready(() ->
     return true
 
 
-  checkBallCollision = (brick_x, brick_y) ->
+  checkBallCollision = (brick_x, brick_y, handle_fn) ->
     xpos = game.x
     ypos = game.y
     for row in [1..game.ball.rows]
@@ -289,13 +350,19 @@ $(document).ready(() ->
         c = getRotatedCorners(ul, ur, lr, ll)
         for corner, index in c
           if pointInBrick(corner[0] + game.dx, corner[1] + game.dy, brick_x, brick_y)
-            return [corner[0], corner[1]]
+            addPoints(1)
+            if not handle_fn
+              return [corner[0], corner[1]]
+            else
+              return handle_fn([corner[0], corner[1]], brick_x, brick_y)
         xpos += game.p_char_w
       xpos = game.x
       ypos += game.p_font_size
     return false
 
   handleBallCollision = (c, brick_x, brick_y) ->
+    if not game.brick_bounce
+      return true
     # center brick
     c_brick_x = brick_x + game.char_w_h
     c_brick_y = brick_y + game.font_size_h
@@ -380,36 +447,43 @@ $(document).ready(() ->
     num_bonuses = 6
 
     if game.bonuses.length >= num_bonuses
-      # reset bonuses
-      game.bonuses = []
-      game.paddle = game_defaults.paddle
-      game.ball = game_defaults.ball
-      game.fall_interval = game_defaults.fall_interval
-      game.fall_speed = game_defaults.fall_speed
+      resetBonuses()
 
     # random bonus
     while true
       bonus = Math.ceil(Math.random() * num_bonuses)
       if bonus not in game.bonuses
         break
+    game.bonuses.push(bonus)
 
     switch bonus
       when 1
+        msgFlash("Small Paddle +10!", true, "fast")
+        addBonus(10)
         game.paddle.cols = 3
       when 2
-        game.paddle.cols = game_defaults.paddle.cols * 2
+        msgFlash("Double Paddle +2!")
+        addBonus(2)
+        game.paddle.cols = game.paddle.cols * 2
       when 3
+        msgFlash("Small Ball +20!", true, "fast")
+        addBonus(20)
         game.ball.cols = 1
         game.ball.rows = 1
       when 4
-        game.ball.cols = game_defaults.ball.cols * 2
-        game.ball.rows = game_defaults.ball.rows * 2
+        msgFlash("Double Ball +5!", true, "fast")
+        addBonus(5)
+        game.ball.cols = game.ball.cols * 2
+        game.ball.rows = game.ball.rows * 2
       when 5
+        msgFlash("More falling bricks!", true, "fast")
         game.fall_interval = 100
       when 6
-        game.fall_speed = () -> 3
+        msgFlash("Super ball!!", true, "fast")
+        game.brick_bounce = false
+        game.ball.cols = 8
+        game.ball.rows = 8
 
-    game.bonuses.push(bonus)
     updateBoardCfg()
 
   fallingBlocks = () ->
@@ -418,9 +492,9 @@ $(document).ready(() ->
       ctx.save()
       ctx.translate(r.x + game.char_w_h, ypos + game.font_size_h)
       ctx.rotate(angle)
-      ctx.clearRect(-game.char_w_h,
-                    -game.font_size_h,
-                    game.char_w, game.font_size)
+      ctx.clearRect(-game.char_w_h - game.char_w,
+                    -game.font_size_h - game.font_size,
+                    game.char_w * 3, game.font_size * 3)
       ctx.restore()
 
     # Display falling blocks
@@ -431,14 +505,19 @@ $(document).ready(() ->
         # paddle collision
         r.d = false
         doBonus()
-      else if checkBallCollision(r.x, r.y)
+        updateBoardCfg()
+      else if checkBallCollision(r.x, r.y, handleBallCollision)
         r.d = false
+        doBonus()
         updateBoardCfg()
       else
         if game.state == "running"
           if game.loop_cnt % r.s == 0
             if r.l_y
               clearFallingBlock(r.l_y, r.l_r)
+            if not r.c
+              console.log("UNDEFINED")
+              console.log(game.block_rotations)
             ctx.save()
             ctx.translate(r.x + game.char_w_h, r.y + game.font_size_h)
             ctx.rotate(r.r)
@@ -457,16 +536,19 @@ $(document).ready(() ->
 
     if game.state == "running"
 
-      if game.loop_cnt % game.fall_interval == 0 and game.board_disp[game.l_char_row_index]
+      last_row = game.board_disp[game.l_char_row_index]
+      if game.loop_cnt % game.fall_interval == 0 and last_row
         non_spaces = []
-        last_row = game.board_disp[game.l_char_row_index]
         for value, index in last_row
           if value != " "
             non_spaces.push(index)
+        if non_spaces.length == 0
+          return
         # random character in the last non-space row
         row_index = non_spaces[Math.floor(Math.random() * non_spaces.length)]
         xpos = game.w_h - Math.round(last_row.length * game.char_w / 2)
-
+        if not last_row[row_index]
+          console.log("Adding undefined value! #{non_spaces} #{row_index}")
         game.block_rotations.push({
           x: xpos + game.char_w * row_index
           y: game.l_char_row_index * game.font_size + game.font_size
@@ -551,13 +633,6 @@ $(document).ready(() ->
     return Math.max.apply(null, (corner[1] for corner in c)) - Math.min.apply(null, (corner[1] for corner in c))
 
   gameLoop = () ->
-    # set to false in process_disp_data()
-    # if a brick is found
-    switch game.state
-      when "over"
-        showOver()
-      when "paused"
-        showPaused()
 
     if game.state == "running"
       won = processBoardDisp()
@@ -565,11 +640,14 @@ $(document).ready(() ->
       if won and game.board_disp.length > 0
         showWin()
 
+      if game.flash
+        return
+
       if game.ball_locked
         game.l_x = game.x
         game.l_y = game.y
         game.ball_angle = game_defaults.ball_angle
-        game.l_ball_angle = game_defaults.l_ball_angle
+        #game.l_ball_angle = game_defaults.l_ball_angle
         game.dx = game_defaults.dx
         game.dy = game_defaults.dy
         game.x = game.paddle_x + game.paddle.w_h - game.ball.w_h
@@ -654,11 +732,7 @@ $(document).ready(() ->
           game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy))
         else
           if game.state == "running"
-            if not updateLives(--game.lives)
-              showOver()
-            else
-              updateBoardCfg()
-              game.ball_locked = true
+            removeLives(1)
           game.dy = -game.dy
 
       if not game.ball_locked
@@ -722,7 +796,7 @@ $(document).ready(() ->
     #  5x3   OOOOO
     #        OOOOO
 
-    ball: {'cols': 10, 'rows': 3, 'w': 0, 'h': 0}
+    ball: {'cols': 2, 'rows': 2, 'w': 0, 'h': 0}
     # paddle
     # [OOOOOOO]
     paddle: {'cols': 9, 'rows': 1, 'w': 0, 'h': 10}
@@ -755,12 +829,15 @@ $(document).ready(() ->
     loop_cnt: 0
     block_rotations: []
     fall_interval: 200
-    fall_speed: () -> Math.floor(Math.random() * 10 + 3)
+    fall_speed: () -> Math.floor(Math.random() * 10 + game.font_size / 3)
 
     # bonus items
     bonuses: []
+    bonus: 1 # multiplier for bonus
     points: 0
     lives: 3
+    flash: false # pause the game for msg flashes
+    brick_bounce: true # bounce the brick
 
     # horizontal paddle location and
     # the paddle direction
@@ -772,6 +849,7 @@ $(document).ready(() ->
   }
 
   updateBoardCfg  = () ->
+    ctx_g.clearRect(0, 0, game.w, game.h)
     ctx.clearRect(0, 0, game.w, game.h)
     #$("#game-canvas")[0].width = Math.floor($(window).width())
     #$("#game-canvas")[0].height = Math.floor($(window).height())
@@ -838,7 +916,7 @@ $(document).ready(() ->
         polyfill: false,
         onSlide: (p, v) ->
           if v
-            $(".font-disp").html(data[v - 1])
+            $("div.font-disp").html("Slide to change the font and size - #{data[v - 1]}")
             game.figlet_font = data[v - 1]
             genDispData($('input[name=str]').val())
       })
@@ -851,7 +929,7 @@ $(document).ready(() ->
     onSlide: (p, v) ->
       if v
         game.font_size = +v
-        $("#js-rangeslider-0 .rangeslider__handle").html("<div style='overflow: hidden;'>#{v}</span>")
+        $("#js-rangeslider-0 .rangeslider__handle").html("<div style='overflow: hidden;'>#{v}</div>")
         genDispData($('input[name=str]').val())
   })
 

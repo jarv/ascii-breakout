@@ -16,38 +16,48 @@
         <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
     <![endif]-->
 
+    <div class="status"> 
+      <div class="statuses points-wrapper">
+        <table>
+          <tr><td>points:</td><td class="value points">0</td></tr>
+          <tr><td>bonus: </td><td class="value bonus">1x</td></tr>
+        </table>
+      </div> 
+      <div class="logo"><a href="/">ASCII BREAKOUT</a></div>
+      <div class="social"><a href="https://twitter.com/__jarv__">@jarv</a> / <a href="https://github.com/jarv/ascii-breakout">github</a></div>
+      <div class="statuses lives-wrapper">
+        <table>
+          <tr><td>lives:</td><td class="value lives">0</td></tr>
+          <tr><td>bonuses:</td><td class="value bonuses">0</td></tr>
+        </table>
+      </div>
+    </div>
     <div class="content">
       <div class="splash">
         <div class="title"></div>
+        <div class="twitter-share"></div>
         <form action="#" id="ascii-submit">
             <input type="text" placeholder="enter any text" name="str" />
             <button name="go">GO!</button>
             <input type="range" id="font-size" min=6 value=9 max=50 step=1>
             <input type="range" id="font-name"  min=6 value=9 max=50 step=1>
+            <div class="font-disp"></div>
         </form>
-        <div class="select-box">
-        </div>  
-        <div class="actions actions-paused">
+        <div class="instructions">
           <ul>
-            <li>&lt;esc&gt; to continue</li>
-            <li class="share-link"></li>
+            <li>tap, click, esc to pause / unpause</li>
+            <li>arrow keys, mouse, touch to move the paddle</li>
+            <li>tap, click, space to release the ball</li>
           </ul>
         </div>
-        <div class="actions actions-splash">
-          <ul>
-            <li class="font-disp"></li>
-            <li class="share-link"></li>
-          </ul>
+        <div class="social-links">
+          <div class="share-link"></div>
+          share on <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://ascii-breakout.com">facebook</a> / <a target="_blank" href="https://twitter.com/home?status=Check%20out%20ascii-breakout%20-%20http://ascii-breakout.com">twitter</a> / <a target="_blank" href="https://plus.google.com/share?url=http://ascii-breakout.com">g+</a>
         </div>
       </div>
-      <div class="status">
-        <ul>
-          <li>points: <span class="points">0<span></li>
-          <li>lives: <span class="lives">0</span></li>
-        </ul> 
-        </div>
       <canvas id="game-canvas" class="canvas"></canvas>
       <canvas id="brick-canvas" class="canvas"></canvas>
+      <div id="msg-flash"></div>
     </div>
     <script src="js/vendor/jquery-1.11.0.min.js"></script>
     <script src="js/vendor/routie.min.js"></script>

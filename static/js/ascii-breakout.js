@@ -3,20 +3,19 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(document).ready(function() {
-    var cfg, cfg_defaults, checkBallCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallHeight, getColor, getRotatedCorners, handleBallCollision, inc_w_limit, pointInBrick, processBoardDisp, showOver, showPaused, showRunning, showSplash, showWin, sign, updateBoardCfg, updateLives, updatePoints;
+    var addBonus, addPoints, cfg, cfg_defaults, checkBallCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallHeight, getColor, getRotatedCorners, handleBallCollision, inc_w_limit, msgFlash, pointInBrick, processBoardDisp, removeLives, resetBonuses, resetLives, resetPoints, showOver, showPaused, showRunning, showSplash, showTwitter, showWin, sign, updateBoardCfg;
     sign = function(x) {
       return x > 0 ? 1 : x < 0 ? -1 : 0;
     };
     showWin = function() {
       game.state = "win";
       $(".title").html("You won, Congratulations!");
-      $(".actions-paused").hide();
-      $(".actions-splash").show();
-      return $(".splash").show();
+      $(".splash").show();
+      showTwitter();
+      return $("#ascii-submit").show();
     };
     showRunning = function() {
       $(".splash").hide();
-      updateLives(game_defaults.lives);
       return game.state = "running";
     };
     showOver = function() {
@@ -24,36 +23,87 @@
       game.state = "over";
       game.ball_locked = true;
       $(".title").html("Game Over!");
-      $(".actions-paused").hide();
-      $(".actions-splash").show();
-      return $(".splash").show();
+      $(".splash").show();
+      $("#ascii-submit").show();
+      return showTwitter();
     };
     showPaused = function() {
       game.state = "paused";
       $(".title").html("Game Paused");
-      $(".actions-splash").hide();
-      $(".actions-paused").show();
-      return $(".splash").show();
+      $(".splash").show();
+      $("#ascii-submit").hide();
+      $(".twitter-share").hide();
+      return $(".social-links").hide();
     };
     showSplash = function() {
       game.state = "splash";
+      $("#msg-flash").hide();
       $(".title").html("ascii breakout");
-      $(".actions-paused").hide();
-      $(".actions-splash").show();
-      return $(".splash").show();
+      $(".splash").show();
+      $("#ascii-submit").show();
+      return $(".twitter-share").hide();
     };
-    updatePoints = function(val) {
-      game.points = val;
-      $("span.points").html(val);
-    };
-    updateLives = function(val) {
-      $("span.lives").html(val);
-      if (val < 1) {
-        return false;
-      } else {
-        game.lives = val;
-        return true;
+    msgFlash = function(str, pause, speed) {
+      $("#msg-flash").html(str);
+      if (pause) {
+        game.flash = true;
       }
+      return $("#msg-flash").fadeIn(speed, function() {
+        game.flash = false;
+        return $("#msg-flash").fadeOut("slow", function() {});
+      });
+    };
+    showTwitter = function() {
+      var encoded, msg;
+      msg = "I scored " + game.points + " points on http://ascii-breakout.com";
+      encoded = encodeURIComponent(msg);
+      $(".twitter-share").html("<a target=\"_blank\"  href=\"https://twitter.com/home?status=" + encoded + "\">Share your score with a link to this game on twitter!\"</a>");
+      return $(".twitter-share").show();
+    };
+    resetPoints = function() {
+      game.points = game_defaults.points;
+      $("td.points").html(game.points);
+    };
+    addPoints = function(val) {
+      game.points += val * game.bonus;
+      $("td.points").html(game.points);
+    };
+    resetLives = function() {
+      game.lives = game_defaults.lives;
+      $("td.lives").html(game.lives);
+    };
+    removeLives = function(val) {
+      var l;
+      game.lives -= val;
+      $("td.lives").html(game.lives);
+      if (!game.lives) {
+        return showOver();
+      } else {
+        updateBoardCfg();
+        if (game.lives > 1) {
+          l = "" + game.lives + " lives remaining";
+        } else {
+          l = "One life remaining";
+        }
+        msgFlash(l, false, "slow");
+        return game.ball_locked = true;
+      }
+    };
+    addBonus = function(val) {
+      game.bonus += val;
+      $("td.bonus").html("" + game.bonus + "x");
+      return $("td.bonuses").html("" + game.bonuses.length);
+    };
+    resetBonuses = function() {
+      game.bonuses = [];
+      game.paddle = game_defaults.paddle;
+      game.ball = game_defaults.ball;
+      game.fall_interval = game_defaults.fall_interval;
+      game.fall_speed = game_defaults.fall_speed;
+      game.brick_bounce = true;
+      game.bonus = game_defaults.bonus;
+      $("td.bonus").html("" + game.bonus + "x");
+      return $("td.bonuses").html("" + game.bonuses.length);
     };
     $(document).click(function(e) {
       switch (game.state) {
@@ -63,6 +113,9 @@
           } else {
             showPaused();
           }
+          break;
+        case "paused":
+          showRunning();
       }
     });
     getColor = function(num) {
@@ -80,6 +133,9 @@
         case "running":
           if (evt.keyCode === 27) {
             showPaused();
+          }
+          if (evt.keyCode === 32) {
+            game.ball_locked = false;
           }
       }
       if (evt.keyCode === 39) {
@@ -133,6 +189,10 @@
     });
     $("#ascii-submit").submit(function(e) {
       if ($('input[name=str]').val().length > 0) {
+        resetBonuses();
+        resetLives();
+        resetPoints();
+        genDispData($('input[name=str]').val());
         showRunning();
       }
       e.preventDefault();
@@ -258,7 +318,7 @@
         encoded_font = encodeURIComponent(game.figlet_font);
         encoded_font_size = encodeURIComponent(game.font_size);
         if (str.length > 0) {
-          $(".share-link").html("<a href=\"#" + encoded_str + "/" + encoded_font + "/" + encoded_font_size + "\">Use this link to share this game with a friend!</a>");
+          $(".share-link").html("Link to this game! <a href=\"#" + encoded_str + "/" + encoded_font + "/" + encoded_font_size + "\">" + (str.replace(/\W/g, "-")) + "</a>");
         } else {
           $(".share-link").html("");
         }
@@ -305,7 +365,7 @@
       }
       return true;
     };
-    checkBallCollision = function(brick_x, brick_y) {
+    checkBallCollision = function(brick_x, brick_y, handle_fn) {
       var c, col, corner, index, ll, lr, row, ul, ur, xpos, ypos, _i, _j, _k, _len, _ref, _ref1;
       xpos = game.x;
       ypos = game.y;
@@ -319,7 +379,12 @@
           for (index = _k = 0, _len = c.length; _k < _len; index = ++_k) {
             corner = c[index];
             if (pointInBrick(corner[0] + game.dx, corner[1] + game.dy, brick_x, brick_y)) {
-              return [corner[0], corner[1]];
+              addPoints(1);
+              if (!handle_fn) {
+                return [corner[0], corner[1]];
+              } else {
+                return handle_fn([corner[0], corner[1]], brick_x, brick_y);
+              }
             }
           }
           xpos += game.p_char_w;
@@ -331,6 +396,9 @@
     };
     handleBallCollision = function(c, brick_x, brick_y) {
       var aoa, c_brick_x, c_brick_y;
+      if (!game.brick_bounce) {
+        return true;
+      }
       c_brick_x = brick_x + game.char_w_h;
       c_brick_y = brick_y + game.font_size_h;
       aoa = Math.atan2(c[1] - c_brick_y, c[0] - c_brick_x);
@@ -415,11 +483,7 @@
       var bonus, num_bonuses;
       num_bonuses = 6;
       if (game.bonuses.length >= num_bonuses) {
-        game.bonuses = [];
-        game.paddle = game_defaults.paddle;
-        game.ball = game_defaults.ball;
-        game.fall_interval = game_defaults.fall_interval;
-        game.fall_speed = game_defaults.fall_speed;
+        resetBonuses();
       }
       while (true) {
         bonus = Math.ceil(Math.random() * num_bonuses);
@@ -427,30 +491,40 @@
           break;
         }
       }
+      game.bonuses.push(bonus);
       switch (bonus) {
         case 1:
+          msgFlash("Small Paddle +10!", true, "fast");
+          addBonus(10);
           game.paddle.cols = 3;
           break;
         case 2:
-          game.paddle.cols = game_defaults.paddle.cols * 2;
+          msgFlash("Double Paddle +2!");
+          addBonus(2);
+          game.paddle.cols = game.paddle.cols * 2;
           break;
         case 3:
+          msgFlash("Small Ball +20!", true, "fast");
+          addBonus(20);
           game.ball.cols = 1;
           game.ball.rows = 1;
           break;
         case 4:
-          game.ball.cols = game_defaults.ball.cols * 2;
-          game.ball.rows = game_defaults.ball.rows * 2;
+          msgFlash("Double Ball +5!", true, "fast");
+          addBonus(5);
+          game.ball.cols = game.ball.cols * 2;
+          game.ball.rows = game.ball.rows * 2;
           break;
         case 5:
+          msgFlash("More falling bricks!", true, "fast");
           game.fall_interval = 100;
           break;
         case 6:
-          game.fall_speed = function() {
-            return 3;
-          };
+          msgFlash("Super ball!!", true, "fast");
+          game.brick_bounce = false;
+          game.ball.cols = 8;
+          game.ball.rows = 8;
       }
-      game.bonuses.push(bonus);
       return updateBoardCfg();
     };
     fallingBlocks = function() {
@@ -459,7 +533,7 @@
         ctx.save();
         ctx.translate(r.x + game.char_w_h, ypos + game.font_size_h);
         ctx.rotate(angle);
-        ctx.clearRect(-game.char_w_h, -game.font_size_h, game.char_w, game.font_size);
+        ctx.clearRect(-game.char_w_h - game.char_w, -game.font_size_h - game.font_size, game.char_w * 3, game.font_size * 3);
         return ctx.restore();
       };
       _ref = game.block_rotations.filter(function(elem) {
@@ -470,14 +544,20 @@
         if ((r.y + game.font_size > game.h - game.paddle.h) && (r.x + game.char_w > game.paddle_x && r.x < game.paddle_x + game.paddle.w)) {
           r.d = false;
           doBonus();
-        } else if (checkBallCollision(r.x, r.y)) {
+          updateBoardCfg();
+        } else if (checkBallCollision(r.x, r.y, handleBallCollision)) {
           r.d = false;
+          doBonus();
           updateBoardCfg();
         } else {
           if (game.state === "running") {
             if (game.loop_cnt % r.s === 0) {
               if (r.l_y) {
                 clearFallingBlock(r.l_y, r.l_r);
+              }
+              if (!r.c) {
+                console.log("UNDEFINED");
+                console.log(game.block_rotations);
               }
               ctx.save();
               ctx.translate(r.x + game.char_w_h, r.y + game.font_size_h);
@@ -497,17 +577,23 @@
         }
       }
       if (game.state === "running") {
-        if (game.loop_cnt % game.fall_interval === 0 && game.board_disp[game.l_char_row_index]) {
+        last_row = game.board_disp[game.l_char_row_index];
+        if (game.loop_cnt % game.fall_interval === 0 && last_row) {
           non_spaces = [];
-          last_row = game.board_disp[game.l_char_row_index];
           for (index = _j = 0, _len1 = last_row.length; _j < _len1; index = ++_j) {
             value = last_row[index];
             if (value !== " ") {
               non_spaces.push(index);
             }
           }
+          if (non_spaces.length === 0) {
+            return;
+          }
           row_index = non_spaces[Math.floor(Math.random() * non_spaces.length)];
           xpos = game.w_h - Math.round(last_row.length * game.char_w / 2);
+          if (!last_row[row_index]) {
+            console.log("Adding undefined value! " + non_spaces + " " + row_index);
+          }
           game.block_rotations.push({
             x: xpos + game.char_w * row_index,
             y: game.l_char_row_index * game.font_size + game.font_size,
@@ -583,23 +669,18 @@
     };
     gameLoop = function() {
       var c, corner, ll, lr, max_x, max_y, min_x, min_y, ul, ur, won;
-      switch (game.state) {
-        case "over":
-          showOver();
-          break;
-        case "paused":
-          showPaused();
-      }
       if (game.state === "running") {
         won = processBoardDisp();
         if (won && game.board_disp.length > 0) {
           showWin();
         }
+        if (game.flash) {
+          return;
+        }
         if (game.ball_locked) {
           game.l_x = game.x;
           game.l_y = game.y;
           game.ball_angle = game_defaults.ball_angle;
-          game.l_ball_angle = game_defaults.l_ball_angle;
           game.dx = game_defaults.dx;
           game.dy = game_defaults.dy;
           game.x = game.paddle_x + game.paddle.w_h - game.ball.w_h;
@@ -705,12 +786,7 @@
             game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy));
           } else {
             if (game.state === "running") {
-              if (!updateLives(--game.lives)) {
-                showOver();
-              } else {
-                updateBoardCfg();
-                game.ball_locked = true;
-              }
+              removeLives(1);
             }
             game.dy = -game.dy;
           }
@@ -749,8 +825,8 @@
       board_disp: [],
       space_w: 0,
       ball: {
-        'cols': 10,
-        'rows': 3,
+        'cols': 2,
+        'rows': 2,
         'w': 0,
         'h': 0
       },
@@ -780,16 +856,20 @@
       block_rotations: [],
       fall_interval: 200,
       fall_speed: function() {
-        return Math.floor(Math.random() * 10 + 3);
+        return Math.floor(Math.random() * 10 + game.font_size / 3);
       },
       bonuses: [],
+      bonus: 1,
       points: 0,
       lives: 3,
+      flash: false,
+      brick_bounce: true,
       paddle_x: void 0,
       paddle_dir: 0,
       m_timeout: null
     };
     updateBoardCfg = function() {
+      ctx_g.clearRect(0, 0, game.w, game.h);
       ctx.clearRect(0, 0, game.w, game.h);
       $("#game-canvas")[0].width = cfg.max_w;
       $("#game-canvas")[0].height = cfg.max_h;
@@ -842,7 +922,7 @@
           polyfill: false,
           onSlide: function(p, v) {
             if (v) {
-              $(".font-disp").html(data[v - 1]);
+              $("div.font-disp").html("Slide to change the font and size - " + data[v - 1]);
               game.figlet_font = data[v - 1];
               return genDispData($('input[name=str]').val());
             }
@@ -855,7 +935,7 @@
       onSlide: function(p, v) {
         if (v) {
           game.font_size = +v;
-          $("#js-rangeslider-0 .rangeslider__handle").html("<div style='overflow: hidden;'>" + v + "</span>");
+          $("#js-rangeslider-0 .rangeslider__handle").html("<div style='overflow: hidden;'>" + v + "</div>");
           return genDispData($('input[name=str]').val());
         }
       }

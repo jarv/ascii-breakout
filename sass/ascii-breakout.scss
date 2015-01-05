@@ -5,7 +5,6 @@ $terminal-green: #00ff00;
 $radio-checked-bg: yellow;
 $title-color: $terminal-green;
 $title-outline: yellow;
-$actions-color: $terminal-green;
 
 $bo1: #c84848;
 $bo2: #c66c3a;
@@ -41,6 +40,20 @@ $select-width: 50px;
     font-family: "vador";
     src: url("fonts/vador.ttf");
 }
+table, caption, tbody, tfoot, thead, tr, th, td {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  vertical-align: baseline;
+  background: transparent;
+  text-align: left;
+}
+
+td.value {
+  text-align: right;
+}
 
 body {
     margin: 0px;
@@ -52,6 +65,61 @@ body {
 input[type="submit"], input[type="text"] {
     line-height:normal !important;
 }
+a {
+  color: darken(yellow, 10);
+}
+a:hover {
+  color: yellow;
+}
+
+div.status {
+  position: relative;
+  width: 800px;
+  margin: 0px auto;
+  text-align: left;
+  font-family: "pressStart";
+  font-size: 12px;
+  color: darken(white, 30);
+  padding-top: 5px;
+  border: 1px solid black;
+  background-color: darken($splash-bg, 30);
+  margin-top: 5%;
+  text-align: center;
+  font-size: 24px;
+  border: 0px;
+  div.statuses {
+    position: absolute;
+    top: 0px;
+    font-size: 12px;
+    padding-top: 5px;
+    width: 20%;
+  }
+  div.points-wrapper {
+    left: 0px;
+    text-align: left;
+    padding-left: 10px;
+  }
+  div.lives-wrapper {
+    right: 0px;
+    text-align: right;
+    padding-right: 10px;
+  }
+  div.logo {
+    a {
+      color: white;
+    }
+
+  }
+  div.social {
+    font-size: 12px;
+    color: black;
+    a {
+      margin: 0px;
+      padding: 0px;
+      font-size: 12px;
+    }
+  }
+}
 
 .content {
 
@@ -60,21 +128,7 @@ input[type="submit"], input[type="text"] {
   background-color: blue;
   position: relative;
   z-index: 200;
-  margin-top: 5%;
   padding-top: 5%;
-  div.status {
-    right: 0px;
-    top: 0px;
-    position: absolute;
-    width: 150px;
-    height: 50px;
-    border: 1px solid red;
-    z-index: 700;
-    text-align: left;
-    font-family: "pressStart";
-    font-size: 12px;
-    color: darken(white, 30);
-  }
   .canvas {
     position: absolute;
     right: 0px;
@@ -84,15 +138,28 @@ input[type="submit"], input[type="text"] {
   #brick-canvas {
     z-index: -300;
     @include linear-gradient(shade(blue, 90%), black);
-    border: 1px solid ;
   }
   #game-canvas {
     z-index: -200;
   }
 
-  .splash {
+  #msg-flash {
     margin: 0px auto; 
     font-family: "pressStart";
+    z-index: 100;
+    width: 60%;
+    text-align: center;
+    opacity: .6;
+    padding: 10px;
+    font-family: "pressStart";
+    margin-top: 100px;
+    color: white; 
+    font-size: 24px;
+    display: none;
+  }
+  .splash {
+    margin: 0px auto; 
+    font-family: "vador";
     z-index: 800;
     width: 60%;
     text-align: center;
@@ -101,17 +168,13 @@ input[type="submit"], input[type="text"] {
     padding: 10px;
     text-shadow: -1px 0 #336a33, 0 1px #336a33, 1px 0 #336a33, 0 -1px #336a33;
     display: none;
-    font-family: "vador";
 
-    .actions {
-        display: none;
-        color: $actions-color;
-    }
     .title {
-        font-size: 3em;
-        font-weight: bold;
-        color: $title-color;
-        text-shadow: 4px 4px black;
+      font-family: "vador";
+      font-size: 3em;
+      font-weight: bold;
+      color: $title-color;
+      text-shadow: 4px 4px black;
     }
     input[name="str"] {
       border-radius: 0px;
@@ -143,23 +206,40 @@ input[type="submit"], input[type="text"] {
     button:hover {
       background-color: darken($button-bg, 10);
     }
-    li.font-disp {
+    div.font-disp {
       margin: 0px;
       margin-bottom: 4px;
-    }
-    li.share-link {
-      display: block;
-      background-color: black; 
-      height: 25px;
+      color: $terminal-green;
       text-shadow: none;
-      padding-top: 4px;
+    }
+    div.instructions {
+      color: black;
+      text-shadow: none;
+      font-family: "pressStart";
+      font-size: 10px;
+      background-color: lighten($splash-bg, 2);
+      padding: 10px;
+    }
+
+     
+    div.social-links,div.twitter-share {
+      background-color: black; 
+      text-shadow: none;
+      div.share-link {
+        padding-top: 4px;
+        overflow: hidden;
+      } 
+
+      font-size: 14px;
+      color: white;
+      text-shadow: none;
       a {
-        color: darken(yellow, 10);
+        text-shadow: none;
+        margin: 0px;
+        padding: 0px;
+        font-size: 12px;
       }
-      a:hover {
-        color: yellow;
-      }
-    } 
+    }
 
     .rangeslider,
     .rangeslider__fill {

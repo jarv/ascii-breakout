@@ -227,6 +227,19 @@ input[type="submit"] {
 @font-face {
   font-family: "vador";
   src: url("fonts/vador.ttf"); }
+table, caption, tbody, tfoot, thead, tr, th, td {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  vertical-align: baseline;
+  background: transparent;
+  text-align: left; }
+
+td.value {
+  text-align: right; }
+
 body {
   margin: 0px;
   background-color: #1a1a1a;
@@ -236,26 +249,58 @@ body {
 input[type="submit"], input[type="text"] {
   line-height: normal !important; }
 
+a {
+  color: #cccc00; }
+
+a:hover {
+  color: yellow; }
+
+div.status {
+  position: relative;
+  width: 800px;
+  margin: 0px auto;
+  text-align: left;
+  font-family: "pressStart";
+  font-size: 12px;
+  color: #b3b3b3;
+  padding-top: 5px;
+  border: 1px solid black;
+  background-color: #191c58;
+  margin-top: 5%;
+  text-align: center;
+  font-size: 24px;
+  border: 0px; }
+  div.status div.statuses {
+    position: absolute;
+    top: 0px;
+    font-size: 12px;
+    padding-top: 5px;
+    width: 20%; }
+  div.status div.points-wrapper {
+    left: 0px;
+    text-align: left;
+    padding-left: 10px; }
+  div.status div.lives-wrapper {
+    right: 0px;
+    text-align: right;
+    padding-right: 10px; }
+  div.status div.logo a {
+    color: white; }
+  div.status div.social {
+    font-size: 12px;
+    color: black; }
+    div.status div.social a {
+      margin: 0px;
+      padding: 0px;
+      font-size: 12px; }
+
 .content {
   width: 800px;
   margin: 0px auto;
   background-color: blue;
   position: relative;
   z-index: 200;
-  margin-top: 5%;
   padding-top: 5%; }
-  .content div.status {
-    right: 0px;
-    top: 0px;
-    position: absolute;
-    width: 150px;
-    height: 50px;
-    border: 1px solid red;
-    z-index: 700;
-    text-align: left;
-    font-family: "pressStart";
-    font-size: 12px;
-    color: #b3b3b3; }
   .content .canvas {
     position: absolute;
     right: 0px;
@@ -264,13 +309,25 @@ input[type="submit"], input[type="text"] {
     z-index: -300;
     background-color: #000019;
     background-image: -webkit-linear-gradient(#000019, black);
-    background-image: linear-gradient(#000019, black);
-    border: 1px solid; }
+    background-image: linear-gradient(#000019, black); }
   .content #game-canvas {
     z-index: -200; }
-  .content .splash {
+  .content #msg-flash {
     margin: 0px auto;
     font-family: "pressStart";
+    z-index: 100;
+    width: 60%;
+    text-align: center;
+    opacity: .6;
+    padding: 10px;
+    font-family: "pressStart";
+    margin-top: 100px;
+    color: white;
+    font-size: 24px;
+    display: none; }
+  .content .splash {
+    margin: 0px auto;
+    font-family: "vador";
     z-index: 800;
     width: 60%;
     text-align: center;
@@ -278,12 +335,9 @@ input[type="submit"], input[type="text"] {
     opacity: .8;
     padding: 10px;
     text-shadow: -1px 0 #336a33, 0 1px #336a33, 1px 0 #336a33, 0 -1px #336a33;
-    display: none;
-    font-family: "vador"; }
-    .content .splash .actions {
-      display: none;
-      color: lime; }
+    display: none; }
     .content .splash .title {
+      font-family: "vador";
       font-size: 3em;
       font-weight: bold;
       color: lime;
@@ -313,19 +367,32 @@ input[type="submit"], input[type="text"] {
       background-color: #477dca; }
     .content .splash button:hover {
       background-color: #3264ac; }
-    .content .splash li.font-disp {
+    .content .splash div.font-disp {
       margin: 0px;
-      margin-bottom: 4px; }
-    .content .splash li.share-link {
-      display: block;
-      background-color: black;
-      height: 25px;
+      margin-bottom: 4px;
+      color: lime;
+      text-shadow: none; }
+    .content .splash div.instructions {
+      color: black;
       text-shadow: none;
-      padding-top: 4px; }
-      .content .splash li.share-link a {
-        color: #cccc00; }
-      .content .splash li.share-link a:hover {
-        color: yellow; }
+      font-family: "pressStart";
+      font-size: 10px;
+      background-color: #4a50ca;
+      padding: 10px; }
+    .content .splash div.social-links, .content .splash div.twitter-share {
+      background-color: black;
+      text-shadow: none;
+      font-size: 14px;
+      color: white;
+      text-shadow: none; }
+      .content .splash div.social-links div.share-link, .content .splash div.twitter-share div.share-link {
+        padding-top: 4px;
+        overflow: hidden; }
+      .content .splash div.social-links a, .content .splash div.twitter-share a {
+        text-shadow: none;
+        margin: 0px;
+        padding: 0px;
+        font-size: 12px; }
     .content .splash .rangeslider,
     .content .splash .rangeslider__fill {
       background: #477dca;
