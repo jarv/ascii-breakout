@@ -504,10 +504,10 @@
           game.paddle.cols = game.paddle.cols * 2;
           break;
         case 3:
-          msgFlash("Double Ball +5!", true, "fast");
-          addBonus(5);
-          game.ball.cols = game.ball.cols * 2;
-          game.ball.rows = game.ball.rows * 2;
+          msgFlash("Small ball", true, "fast");
+          addBonus(20);
+          game.ball.cols = 1;
+          game.ball.rows = 1;
           break;
         case 4:
           msgFlash("More falling bricks!", true, "fast");
