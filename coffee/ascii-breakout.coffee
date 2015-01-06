@@ -1,7 +1,5 @@
 $(document).ready(() ->
 
-
-
   sign = (x) -> `x > 0 ? 1 : x < 0 ? -1 : 0`
 
   # Game states
@@ -460,7 +458,7 @@ $(document).ready(() ->
       when 1
         msgFlash("Small Paddle +10!", true, "fast")
         addBonus(10)
-        game.paddle.cols = 3
+        game.paddle.cols = 5
       when 2
         msgFlash("Double Paddle +2!")
         addBonus(2)
