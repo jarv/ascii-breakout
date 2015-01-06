@@ -496,7 +496,7 @@
         case 1:
           msgFlash("Small Paddle +10!", true, "fast");
           addBonus(10);
-          game.paddle.cols = 3;
+          game.paddle.cols = 5;
           break;
         case 2:
           msgFlash("Double Paddle +2!");
@@ -681,6 +681,7 @@
           game.l_x = game.x;
           game.l_y = game.y;
           game.ball_angle = game_defaults.ball_angle;
+          game.ball_spin = game_defaults.ball_spin;
           game.dx = game_defaults.dx;
           game.dy = game_defaults.dy;
           game.x = game.paddle_x + game.paddle.w_h - game.ball.w_h;
@@ -810,9 +811,9 @@
     };
     game_defaults = {
       dx: 0,
-      dy: -8,
-      max_dx: 10,
-      max_dy: 12,
+      dy: -6,
+      max_dx: 6,
+      max_dy: 8,
       x: -1000,
       y: -1000,
       l_x: -1,
