@@ -757,7 +757,7 @@ $(document).ready(() ->
   game_defaults = {
     # initial speed
     dx: 0
-    dy: -8
+    dy: -6
     # Max dx for when the ball
     # hits a moving paddle
     max_dx: 10
