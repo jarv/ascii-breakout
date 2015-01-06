@@ -702,7 +702,7 @@ $(document).ready(() ->
         game.dy = -game.dy
       else if (max_y + game.dy > (game.h - game.paddle.h))
         # ball is at the bottom of the board
-        if (max_x > game.paddle_x and min_x < (game.paddle_x + game.paddle.w))
+        if (max_x > game.paddle_x - game.char_w and min_x < (game.paddle_x + game.paddle.w + game.char_w))
           # if the ball is not spinning or if it is spinning in the opposite
           # direction from its motion then slow down the spin and the speed
           if not game.ball_spin or sign(game.dx) != sign(game.ball_spin)
@@ -717,7 +717,7 @@ $(document).ready(() ->
           if (game.x + game.ball.w < game.paddle_x + game.p_char_w)
             game.dx = -game.max_dx
             game.ball_spin = -game.ball_max_spin
-          if (game.x > game.paddle_x + game.paddle.w - game.p_char_w)
+          if (game.x > game.paddle_x + game.paddle.w - game.p_char_w )
             game.dx =  game.max_dx
             game.ball_spin = game.ball_max_spin
 
