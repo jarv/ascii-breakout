@@ -481,7 +481,7 @@
     };
     doBonus = function() {
       var bonus, num_bonuses;
-      num_bonuses = 6;
+      num_bonuses = 5;
       if (game.bonuses.length >= num_bonuses) {
         resetBonuses();
       }
@@ -504,22 +504,16 @@
           game.paddle.cols = game.paddle.cols * 2;
           break;
         case 3:
-          msgFlash("Small Ball +20!", true, "fast");
-          addBonus(20);
-          game.ball.cols = 1;
-          game.ball.rows = 1;
-          break;
-        case 4:
           msgFlash("Double Ball +5!", true, "fast");
           addBonus(5);
           game.ball.cols = game.ball.cols * 2;
           game.ball.rows = game.ball.rows * 2;
           break;
-        case 5:
+        case 4:
           msgFlash("More falling bricks!", true, "fast");
           game.fall_interval = 100;
           break;
-        case 6:
+        case 5:
           msgFlash("Super ball!!", true, "fast");
           game.brick_bounce = false;
           game.ball.cols = 8;
