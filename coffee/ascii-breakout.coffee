@@ -761,8 +761,8 @@ $(document).ready(() ->
     dy: -6
     # Max dx for when the ball
     # hits a moving paddle
-    max_dx: 10
-    max_dy: 12
+    max_dx: 6
+    max_dy: 8
     # initial position
     x: -1000
     y: -1000
