@@ -762,7 +762,7 @@
           game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy));
           game.dy = -game.dy;
         } else if (max_y + game.dy > (game.h - game.paddle.h)) {
-          if (max_x > game.paddle_x && min_x < (game.paddle_x + game.paddle.w)) {
+          if (max_x > game.paddle_x - game.char_w && min_x < (game.paddle_x + game.paddle.w + game.char_w)) {
             if (!game.ball_spin || sign(game.dx) !== sign(game.ball_spin)) {
               game.dx = inc_w_limit(game.dx, game.ball_spin * 2, game.max_dx, -game.max_dx);
               game.ball_spin = inc_w_limit(game.ball_spin, game.dx, game.ball_max_spin, -game.ball_max_spin);
