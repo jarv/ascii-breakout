@@ -101,7 +101,6 @@
       game.fall_interval = game_defaults.fall_interval;
       game.fall_speed = game_defaults.fall_speed;
       game.brick_bounce = true;
-      game.bonus = game_defaults.bonus;
       $("td.bonus").html("" + game.bonus + "x");
       return $("td.bonuses").html("" + game.bonuses.length);
     };
@@ -189,6 +188,7 @@
     });
     $("#ascii-submit").submit(function(e) {
       if ($('input[name=str]').val().length > 0) {
+        game.bonus = game_defaults.bonus;
         resetBonuses();
         resetLives();
         resetPoints();
@@ -504,10 +504,10 @@
           game.paddle.cols = game.paddle.cols * 2;
           break;
         case 3:
-          msgFlash("Double Ball +5!", true, "fast");
-          addBonus(5);
-          game.ball.cols = game.ball.cols * 2;
-          game.ball.rows = game.ball.rows * 2;
+          msgFlash("Small ball", true, "fast");
+          addBonus(20);
+          game.ball.cols = 1;
+          game.ball.rows = 1;
           break;
         case 4:
           msgFlash("More falling bricks!", true, "fast");
