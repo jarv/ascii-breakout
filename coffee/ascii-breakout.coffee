@@ -105,7 +105,6 @@ $(document).ready(() ->
     game.fall_interval = game_defaults.fall_interval
     game.fall_speed = game_defaults.fall_speed
     game.brick_bounce = true
-    game.bonus = game_defaults.bonus
     $("td.bonus").html("#{game.bonus}x")
     $("td.bonuses").html("#{game.bonuses.length}")
 
@@ -194,6 +193,7 @@ $(document).ready(() ->
 
   $("#ascii-submit").submit((e) ->
     if $('input[name=str]').val().length > 0
+      game.bonus = game_defaults.bonus
       resetBonuses()
       resetLives()
       resetPoints()
