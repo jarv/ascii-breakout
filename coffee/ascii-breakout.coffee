@@ -645,6 +645,7 @@ $(document).ready(() ->
         game.l_x = game.x
         game.l_y = game.y
         game.ball_angle = game_defaults.ball_angle
+        game.ball_spin = game_defaults.ball_spin
         #game.l_ball_angle = game_defaults.l_ball_angle
         game.dx = game_defaults.dx
         game.dy = game_defaults.dy
