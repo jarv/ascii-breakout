@@ -2,7 +2,7 @@ BASEDIR=$(CURDIR)
 OUTPUTDIR=$(BASEDIR)/static
 
 serve:
-	cd $(OUTPUTDIR); python -m SimpleHTTPServer 5555
+	cd $(OUTPUTDIR); python2 -m SimpleHTTPServer 5555
 
 github: 
 	echo "ascii-breakout.com" > $(OUTPUTDIR)/CNAME
