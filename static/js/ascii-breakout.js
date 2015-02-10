@@ -3,7 +3,7 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(document).ready(function() {
-    var addBonus, addPoints, cfg, cfg_defaults, checkBallCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallHeight, getColor, getRotatedCorners, handleBallCollision, inc_w_limit, msgFlash, pointInBrick, processBoardDisp, removeLives, resetBonuses, resetLives, resetPoints, showOver, showPaused, showRunning, showSplash, showTwitter, showWin, sign, updateBoardCfg;
+    var addBonus, addPoints, cfg, cfg_defaults, checkBallCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallHeight, getColor, getRotatedCorners, handleBallCollision, inc_w_limit, msgFlash, pointInBrick, processBoardDisp, removeLives, resetBonuses, resetLives, resetPoints, showOver, showPaused, showRunning, showSplash, showTwitter, showWin, sign, sound, sounds, updateBoardCfg, _i, _len, _ref;
     sign = function(x) {
       return x > 0 ? 1 : x < 0 ? -1 : 0;
     };
@@ -15,6 +15,7 @@
       return $("#ascii-submit").show();
     };
     showRunning = function() {
+      sounds.unpause.play();
       $(".splash").hide();
       return game.state = "running";
     };
@@ -28,6 +29,7 @@
       return showTwitter();
     };
     showPaused = function() {
+      sounds.pause.play();
       game.state = "paused";
       $(".title").html("Game Paused");
       $(".splash").show();
@@ -475,12 +477,14 @@
         ypos += game.font_size;
       }
       if (last_c) {
+        sounds.hit.play();
         handleBallCollision(last_c, xpos_c, ypos_c);
       }
       return has_won;
     };
     doBonus = function() {
       var bonus, num_bonuses;
+      sounds.upgrade.play();
       num_bonuses = 5;
       if (game.bonuses.length >= num_bonuses) {
         resetBonuses();
@@ -740,6 +744,7 @@
           return _results;
         })()));
         if (max_x + game.dx > game.w) {
+          sounds.bounce.play();
           if (!game.ball_spin || sign(game.dy) === sign(game.ball_spin)) {
             game.dy = inc_w_limit(game.dy, -game.ball_spin * 2, game.max_dy, -game.max_dy);
             game.ball_spin = inc_w_limit(game.ball_spin, -game.dy, game.ball_max_spin, -game.ball_max_spin);
@@ -747,6 +752,7 @@
           game.dx = -game.dx;
         }
         if (min_x + game.dx < 0) {
+          sounds.bounce.play();
           if (!game.ball_spin || sign(game.dy) !== sign(game.ball_spin)) {
             game.dy = inc_w_limit(game.dy, game.ball_spin * 2, game.max_dy, -game.max_dy);
             game.ball_spin = inc_w_limit(game.ball_spin, game.dy, game.ball_max_spin, -game.ball_max_spin);
@@ -755,6 +761,7 @@
           game.dx = -game.dx;
         }
         if (min_y + game.dy < 0) {
+          sounds.bounce.play();
           if (!game.ball_spin || sign(game.dx) === sign(game.ball_spin)) {
             game.dx = inc_w_limit(game.dx, -game.ball_spin * 2, game.max_dx, -game.max_dx);
             game.ball_spin = inc_w_limit(game.ball_spin, -game.dx, game.ball_max_spin, -game.ball_max_spin);
@@ -763,6 +770,7 @@
           game.dy = -game.dy;
         } else if (max_y + game.dy > (game.h - game.paddle.h)) {
           if (max_x > game.paddle_x - game.char_w && min_x < (game.paddle_x + game.paddle.w + game.char_w)) {
+            sounds.paddle.play();
             if (!game.ball_spin || sign(game.dx) !== sign(game.ball_spin)) {
               game.dx = inc_w_limit(game.dx, game.ball_spin * 2, game.max_dx, -game.max_dx);
               game.ball_spin = inc_w_limit(game.ball_spin, game.dx, game.ball_max_spin, -game.ball_max_spin);
@@ -780,6 +788,7 @@
             game.dy = -game.dy;
             game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy));
           } else {
+            sounds.death.play();
             if (game.state === "running") {
               removeLives(1);
             }
@@ -803,6 +812,12 @@
       max_w: 800,
       max_h: 600
     };
+    sounds = {};
+    _ref = ["bounce", "death", "pause", "hit", "paddle", "unpause", "upgrade"];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      sound = _ref[_i];
+      sounds[sound] = new Audio("sounds/" + sound + ".wav");
+    }
     game_defaults = {
       dx: 0,
       dy: -6,
