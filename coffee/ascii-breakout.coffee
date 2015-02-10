@@ -17,6 +17,7 @@ $(document).ready(() ->
     $("#ascii-submit").show()
 
   showRunning = () ->
+    sounds.unpause.play()
     $(".splash").hide()
     game.state = "running"
 
@@ -30,6 +31,7 @@ $(document).ready(() ->
     showTwitter()
 
   showPaused = () ->
+    sounds.pause.play()
     game.state = "paused"
     $(".title").html("Game Paused")
     $(".splash").show()
@@ -436,12 +438,14 @@ $(document).ready(() ->
       ypos += game.font_size
 
     if last_c
+      sounds.hit.play()
       # if there was a collision we bounce the ball
       # off of the last brick that we ran into
       handleBallCollision(last_c, xpos_c, ypos_c)
     return has_won
 
   doBonus = () ->
+    sounds.upgrade.play()
     num_bonuses = 5
 
     if game.bonuses.length >= num_bonuses
@@ -676,6 +680,7 @@ $(document).ready(() ->
 
       # handle wall collisions
       if (max_x + game.dx > game.w)
+        sounds.bounce.play()
         # if the ball is not spinning or if it is spinning in the opposite
         # direction from its motion then slow down the spin and the speed
         if not game.ball_spin or sign(game.dy) == sign(game.ball_spin)
@@ -683,6 +688,7 @@ $(document).ready(() ->
           game.ball_spin = inc_w_limit(game.ball_spin, -game.dy, game.ball_max_spin, -game.ball_max_spin)
         game.dx = -game.dx
       if (min_x + game.dx < 0)
+        sounds.bounce.play()
         # if the ball is not spinning or if it is spinning in the opposite
         # direction from its motion then slow down the spin and the speed
         if not game.ball_spin or sign(game.dy) != sign(game.ball_spin)
@@ -692,6 +698,7 @@ $(document).ready(() ->
         game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy))
         game.dx = -game.dx
       if (min_y + game.dy < 0)
+        sounds.bounce.play()
         # if the ball is not spinning or if it is spinning in the opposite
         # direction from its motion then slow down the spin and the speed
         if not game.ball_spin or sign(game.dx) == sign(game.ball_spin)
@@ -703,6 +710,7 @@ $(document).ready(() ->
       else if (max_y + game.dy > (game.h - game.paddle.h))
         # ball is at the bottom of the board
         if (max_x > game.paddle_x - game.char_w and min_x < (game.paddle_x + game.paddle.w + game.char_w))
+          sounds.paddle.play()
           # if the ball is not spinning or if it is spinning in the opposite
           # direction from its motion then slow down the spin and the speed
           if not game.ball_spin or sign(game.dx) != sign(game.ball_spin)
@@ -725,6 +733,7 @@ $(document).ready(() ->
           # if the ball has a slow verit speed, reset it to the default
           game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy))
         else
+          sounds.death.play()
           if game.state == "running"
             removeLives(1)
           game.dy = -game.dy
@@ -749,6 +758,12 @@ $(document).ready(() ->
     max_h: 600
 
   }
+
+  sounds = {}
+
+  # initialize the sound bank
+  for sound in ["bounce", "death", "pause", "hit", "paddle", "unpause", "upgrade"]
+    sounds[sound] = new Audio("sounds/#{ sound }.wav")
 
   game_defaults = {
     # initial speed
