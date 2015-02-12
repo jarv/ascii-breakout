@@ -154,8 +154,6 @@ $(document).ready(() ->
         $(".sound-toggle").text("ON")
       else
         $(".sound-toggle").text("OFF")
-
-    alert(evt.keyCode)
     return
 
   )
