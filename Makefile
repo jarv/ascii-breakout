@@ -7,6 +7,7 @@ serve:
 github: 
 	echo "ascii-breakout.com" > $(OUTPUTDIR)/CNAME
 	java -jar ~/bin/compiler.jar --js_output_file=static/js/ascii-breakout.min.js static/js/ascii-breakout.js
+	sed -i -e s/ascii-breakout.js/ascii-breakout.min.js/ static/index.html
 	ghp-import -p static/
 
 wcoffee:

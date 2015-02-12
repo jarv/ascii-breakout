@@ -18,16 +18,16 @@ would like to help fix it!
 [Submit an issue](https://github.com/jarv/ascii-breakout/issues) and I will do my
 best to fix it.
 
-## Running locally
-
-```
-$ git clone git@github.com:jarv/ascii-breakout
-$ make serve
-```
 
 ## Development
 
 There is one large-ish coffee script file for the entire game.  On my todo list is making a library so it can be re-used easily.
 
 1. Install [coffeescript](http://coffeescript.org/#installation)
-2. After checking out the repo run `make cwatch` to watch for coffeescript changes
+2. Install [sass](http://sass-lang.com/install)
+3. `git clone git@github.com:jarv/ascii-breakout`
+4. After checking out the repo run 
+  * `make cwatch` to watch for coffeescript changes
+  * `make swatch` to watch for sass changes
+  * `make serve` to run the dev server
+

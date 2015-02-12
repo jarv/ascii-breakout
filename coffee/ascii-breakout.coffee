@@ -17,7 +17,7 @@ $(document).ready(() ->
     $("#ascii-submit").show()
 
   showRunning = () ->
-    sounds.unpause.play()
+    playSound('unpause')
     $(".splash").hide()
     game.state = "running"
 
@@ -31,7 +31,7 @@ $(document).ready(() ->
     showTwitter()
 
   showPaused = () ->
-    sounds.pause.play()
+    playSound('pause')
     game.state = "paused"
     $(".title").html("Game Paused")
     $(".splash").show()
@@ -148,8 +148,14 @@ $(document).ready(() ->
     else if (evt.keyCode == 37) # <-
       game.left_down = true
       game.paddle_dir = -1
-
+    else if (evt.keyCode =- 83) # s
+      game.sound_enabled = !game.sound_enabled
+      if game.sound_enabled
+        $(".sound-toggle").text("ON")
+      else
+        $(".sound-toggle").text("OFF")
     return
+
   )
 
   $(document).keyup((evt) ->
@@ -438,14 +444,14 @@ $(document).ready(() ->
       ypos += game.font_size
 
     if last_c
-      sounds.hit.play()
+      playSound('hit')
       # if there was a collision we bounce the ball
       # off of the last brick that we ran into
       handleBallCollision(last_c, xpos_c, ypos_c)
     return has_won
 
   doBonus = () ->
-    sounds.upgrade.play()
+    playSound('upgrade')
     num_bonuses = 5
 
     if game.bonuses.length >= num_bonuses
@@ -478,8 +484,8 @@ $(document).ready(() ->
       when 5
         msgFlash("Super ball!!", true, "fast")
         game.brick_bounce = false
-        game.ball.cols = 8
-        game.ball.rows = 8
+        game.ball.cols = 5
+        game.ball.rows = 5
 
     updateBoardCfg()
 
@@ -680,7 +686,7 @@ $(document).ready(() ->
 
       # handle wall collisions
       if (max_x + game.dx > game.w)
-        sounds.bounce.play()
+        playSound('bounce')
         # if the ball is not spinning or if it is spinning in the opposite
         # direction from its motion then slow down the spin and the speed
         if not game.ball_spin or sign(game.dy) == sign(game.ball_spin)
@@ -688,7 +694,7 @@ $(document).ready(() ->
           game.ball_spin = inc_w_limit(game.ball_spin, -game.dy, game.ball_max_spin, -game.ball_max_spin)
         game.dx = -game.dx
       if (min_x + game.dx < 0)
-        sounds.bounce.play()
+        playSound('bounce')
         # if the ball is not spinning or if it is spinning in the opposite
         # direction from its motion then slow down the spin and the speed
         if not game.ball_spin or sign(game.dy) != sign(game.ball_spin)
@@ -698,7 +704,7 @@ $(document).ready(() ->
         game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy))
         game.dx = -game.dx
       if (min_y + game.dy < 0)
-        sounds.bounce.play()
+        playSound('bounce')
         # if the ball is not spinning or if it is spinning in the opposite
         # direction from its motion then slow down the spin and the speed
         if not game.ball_spin or sign(game.dx) == sign(game.ball_spin)
@@ -710,7 +716,7 @@ $(document).ready(() ->
       else if (max_y + game.dy > (game.h - game.paddle.h))
         # ball is at the bottom of the board
         if (max_x > game.paddle_x - game.char_w and min_x < (game.paddle_x + game.paddle.w + game.char_w))
-          sounds.paddle.play()
+          playSound('paddle')
           # if the ball is not spinning or if it is spinning in the opposite
           # direction from its motion then slow down the spin and the speed
           if not game.ball_spin or sign(game.dx) != sign(game.ball_spin)
@@ -733,7 +739,7 @@ $(document).ready(() ->
           # if the ball has a slow verit speed, reset it to the default
           game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy))
         else
-          sounds.death.play()
+          playSound('death')
           if game.state == "running"
             removeLives(1)
           game.dy = -game.dy
@@ -759,11 +765,6 @@ $(document).ready(() ->
 
   }
 
-  sounds = {}
-
-  # initialize the sound bank
-  for sound in ["bounce", "death", "pause", "hit", "paddle", "unpause", "upgrade"]
-    sounds[sound] = new Audio("sounds/#{ sound }.wav")
 
   game_defaults = {
     # initial speed
@@ -855,6 +856,8 @@ $(document).ready(() ->
 
     # for detecting an idle mouse
     m_timeout: null
+
+    sound_enabled: true
   }
 
   updateBoardCfg  = () ->
@@ -908,6 +911,34 @@ $(document).ready(() ->
 
   # update game state vars with defaults
   game = $.extend(true, {}, game_defaults)
+
+
+  # initialize the sound bank
+  game.sound = new Howl(
+    {
+      "urls": [
+        "../sounds/mygameaudio.ogg",
+        "../sounds/mygameaudio.m4a",
+        "../sounds/mygameaudio.mp3",
+        "../sounds/mygameaudio.ac3"
+      ],
+      "sprite": {
+        "bounce": [0, 636.054421768707],
+        "death": [2000, 597.1655328798184],
+        "hit": [4000, 33.922902494331],
+        "paddle": [6000, 81.541950113379],
+        "pause": [8000, 439.818594104308],
+        "unpause": [10000, 439.818594104308],
+        "upgrade": [12000, 297.142857142857],
+      }
+    }
+  )
+
+  playSound = (sound) ->
+    if game.sound_enabled
+      game.sound.play(sound)
+    return
+
   # update config with defaults
   cfg = $.extend(true, {}, cfg_defaults)
   updateBoardCfg()

@@ -3,7 +3,7 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(document).ready(function() {
-    var addBonus, addPoints, cfg, cfg_defaults, checkBallCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallHeight, getColor, getRotatedCorners, handleBallCollision, inc_w_limit, msgFlash, pointInBrick, processBoardDisp, removeLives, resetBonuses, resetLives, resetPoints, showOver, showPaused, showRunning, showSplash, showTwitter, showWin, sign, sound, sounds, updateBoardCfg, _i, _len, _ref;
+    var addBonus, addPoints, cfg, cfg_defaults, checkBallCollision, createBoardDisp, createLineBreaks, ctx, ctx_g, dispBoard, doBonus, drawAsciiBall, drawPaddle, fallingBlocks, game, gameLoop, game_defaults, genDispData, getBallHeight, getColor, getRotatedCorners, handleBallCollision, inc_w_limit, msgFlash, playSound, pointInBrick, processBoardDisp, removeLives, resetBonuses, resetLives, resetPoints, showOver, showPaused, showRunning, showSplash, showTwitter, showWin, sign, updateBoardCfg;
     sign = function(x) {
       return x > 0 ? 1 : x < 0 ? -1 : 0;
     };
@@ -15,7 +15,7 @@
       return $("#ascii-submit").show();
     };
     showRunning = function() {
-      sounds.unpause.play();
+      playSound('unpause');
       $(".splash").hide();
       return game.state = "running";
     };
@@ -29,7 +29,7 @@
       return showTwitter();
     };
     showPaused = function() {
-      sounds.pause.play();
+      playSound('pause');
       game.state = "paused";
       $(".title").html("Game Paused");
       $(".splash").show();
@@ -145,6 +145,13 @@
       } else if (evt.keyCode === 37) {
         game.left_down = true;
         game.paddle_dir = -1;
+      } else if ((evt.keyCode = -83)) {
+        game.sound_enabled = !game.sound_enabled;
+        if (game.sound_enabled) {
+          $(".sound-toggle").text("ON");
+        } else {
+          $(".sound-toggle").text("OFF");
+        }
       }
     });
     $(document).keyup(function(evt) {
@@ -477,14 +484,14 @@
         ypos += game.font_size;
       }
       if (last_c) {
-        sounds.hit.play();
+        playSound('hit');
         handleBallCollision(last_c, xpos_c, ypos_c);
       }
       return has_won;
     };
     doBonus = function() {
       var bonus, num_bonuses;
-      sounds.upgrade.play();
+      playSound('upgrade');
       num_bonuses = 5;
       if (game.bonuses.length >= num_bonuses) {
         resetBonuses();
@@ -520,8 +527,8 @@
         case 5:
           msgFlash("Super ball!!", true, "fast");
           game.brick_bounce = false;
-          game.ball.cols = 8;
-          game.ball.rows = 8;
+          game.ball.cols = 5;
+          game.ball.rows = 5;
       }
       return updateBoardCfg();
     };
@@ -744,7 +751,7 @@
           return _results;
         })()));
         if (max_x + game.dx > game.w) {
-          sounds.bounce.play();
+          playSound('bounce');
           if (!game.ball_spin || sign(game.dy) === sign(game.ball_spin)) {
             game.dy = inc_w_limit(game.dy, -game.ball_spin * 2, game.max_dy, -game.max_dy);
             game.ball_spin = inc_w_limit(game.ball_spin, -game.dy, game.ball_max_spin, -game.ball_max_spin);
@@ -752,7 +759,7 @@
           game.dx = -game.dx;
         }
         if (min_x + game.dx < 0) {
-          sounds.bounce.play();
+          playSound('bounce');
           if (!game.ball_spin || sign(game.dy) !== sign(game.ball_spin)) {
             game.dy = inc_w_limit(game.dy, game.ball_spin * 2, game.max_dy, -game.max_dy);
             game.ball_spin = inc_w_limit(game.ball_spin, game.dy, game.ball_max_spin, -game.ball_max_spin);
@@ -761,7 +768,7 @@
           game.dx = -game.dx;
         }
         if (min_y + game.dy < 0) {
-          sounds.bounce.play();
+          playSound('bounce');
           if (!game.ball_spin || sign(game.dx) === sign(game.ball_spin)) {
             game.dx = inc_w_limit(game.dx, -game.ball_spin * 2, game.max_dx, -game.max_dx);
             game.ball_spin = inc_w_limit(game.ball_spin, -game.dx, game.ball_max_spin, -game.ball_max_spin);
@@ -770,7 +777,7 @@
           game.dy = -game.dy;
         } else if (max_y + game.dy > (game.h - game.paddle.h)) {
           if (max_x > game.paddle_x - game.char_w && min_x < (game.paddle_x + game.paddle.w + game.char_w)) {
-            sounds.paddle.play();
+            playSound('paddle');
             if (!game.ball_spin || sign(game.dx) !== sign(game.ball_spin)) {
               game.dx = inc_w_limit(game.dx, game.ball_spin * 2, game.max_dx, -game.max_dx);
               game.ball_spin = inc_w_limit(game.ball_spin, game.dx, game.ball_max_spin, -game.ball_max_spin);
@@ -788,7 +795,7 @@
             game.dy = -game.dy;
             game.dy = sign(game.dy) * Math.max(Math.abs(game.dy), Math.abs(game_defaults.dy));
           } else {
-            sounds.death.play();
+            playSound('death');
             if (game.state === "running") {
               removeLives(1);
             }
@@ -812,12 +819,6 @@
       max_w: 800,
       max_h: 600
     };
-    sounds = {};
-    _ref = ["bounce", "death", "pause", "hit", "paddle", "unpause", "upgrade"];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      sound = _ref[_i];
-      sounds[sound] = new Audio("sounds/" + sound + ".wav");
-    }
     game_defaults = {
       dx: 0,
       dy: -6,
@@ -876,7 +877,8 @@
       brick_bounce: true,
       paddle_x: void 0,
       paddle_dir: 0,
-      m_timeout: null
+      m_timeout: null,
+      sound_enabled: true
     };
     updateBoardCfg = function() {
       ctx_g.clearRect(0, 0, game.w, game.h);
@@ -918,6 +920,23 @@
     ctx_g = $("#game-canvas")[0].getContext("2d");
     ctx = $("#brick-canvas")[0].getContext("2d");
     game = $.extend(true, {}, game_defaults);
+    game.sound = new Howl({
+      "urls": ["../sounds/mygameaudio.ogg", "../sounds/mygameaudio.m4a", "../sounds/mygameaudio.mp3", "../sounds/mygameaudio.ac3"],
+      "sprite": {
+        "bounce": [0, 636.054421768707],
+        "death": [2000, 597.1655328798184],
+        "hit": [4000, 33.922902494331],
+        "paddle": [6000, 81.541950113379],
+        "pause": [8000, 439.818594104308],
+        "unpause": [10000, 439.818594104308],
+        "upgrade": [12000, 297.142857142857]
+      }
+    });
+    playSound = function(sound) {
+      if (game.sound_enabled) {
+        game.sound.play(sound);
+      }
+    };
     cfg = $.extend(true, {}, cfg_defaults);
     updateBoardCfg();
     $.ajax({
