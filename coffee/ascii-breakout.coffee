@@ -148,12 +148,14 @@ $(document).ready(() ->
     else if (evt.keyCode == 37) # <-
       game.left_down = true
       game.paddle_dir = -1
-    else if (evt.keyCode =- 83) # s
+    else if (evt.keyCode == 83) # s
       game.sound_enabled = !game.sound_enabled
       if game.sound_enabled
         $(".sound-toggle").text("ON")
       else
         $(".sound-toggle").text("OFF")
+
+    alert(evt.keyCode)
     return
 
   )
