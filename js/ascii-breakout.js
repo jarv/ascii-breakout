@@ -153,7 +153,6 @@
           $(".sound-toggle").text("OFF");
         }
       }
-      alert(evt.keyCode);
     });
     $(document).keyup(function(evt) {
       if (evt.keyCode === 39) {
