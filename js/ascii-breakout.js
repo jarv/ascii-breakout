@@ -145,7 +145,7 @@
       } else if (evt.keyCode === 37) {
         game.left_down = true;
         game.paddle_dir = -1;
-      } else if ((evt.keyCode = -83)) {
+      } else if (evt.keyCode === 83) {
         game.sound_enabled = !game.sound_enabled;
         if (game.sound_enabled) {
           $(".sound-toggle").text("ON");
@@ -153,6 +153,7 @@
           $(".sound-toggle").text("OFF");
         }
       }
+      alert(evt.keyCode);
     });
     $(document).keyup(function(evt) {
       if (evt.keyCode === 39) {
